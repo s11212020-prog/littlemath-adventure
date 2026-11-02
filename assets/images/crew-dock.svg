@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 260" preserveAspectRatio="xMidYMid slice">
+  <!-- 船員登記所的碼頭預覽背景：Claude 原創手繪 SVG（天空、遠島、燈塔、海面、小帆船、木碼頭）。日後可直接用精緻圖替換此檔，檔名不變即可。 -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BDEBFF"/><stop offset="1" stop-color="#E4F9F7"/></linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5FD3E4"/><stop offset="1" stop-color="#139FC4"/></linearGradient>
+  </defs>
+  <rect width="360" height="260" fill="url(#sky)"/>
+  <circle cx="296" cy="52" r="26" fill="#FFD166" opacity=".35"/><circle cx="296" cy="52" r="19" fill="#FFD166"/>
+  <g fill="#fff"><path d="M30 60q0-12 14-12 5-10 18-4 10-2 14 8 12 0 12 10H30z"/><path d="M200 36q0-9 10-9 4-7 13-3 8-1 11 6 9 0 9 7h-43z" opacity=".9"/></g>
+  <!-- 遠島與小燈塔 -->
+  <path d="M-10 150q40-46 100-4 20-18 52 4z" fill="#7BC74D"/><path d="M-10 150q40-46 100-4 20-18 52 4v6H-10z" fill="#47C98B" opacity=".6"/>
+  <path d="M20 152h120v7H20z" fill="#F2C894"/>
+  <path d="M104 108l4-24h8l4 24z" fill="#fff" stroke="#17324D" stroke-width="2" stroke-linejoin="round"/><path d="M105.4 100h13.2l.8 5h-14.8z" fill="#FF7A59"/><rect x="106" y="79" width="12" height="7" rx="2" fill="#FFD166" stroke="#17324D" stroke-width="2"/><path d="M104 79l8-8 8 8z" fill="#FF7A59" stroke="#17324D" stroke-width="2" stroke-linejoin="round"/>
+  <!-- 海面 -->
+  <rect y="150" width="360" height="110" fill="url(#sea)"/>
+  <g fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3" stroke-linecap="round"><path d="M20 176q8-6 16 0t16 0"/><path d="M262 166q8-6 16 0t16 0"/><path d="M180 160q8-6 16 0t16 0"/><path d="M40 214q8-6 16 0t16 0"/><path d="M300 222q8-6 16 0t16 0"/></g>
+  <!-- 小帆船 -->
+  <g stroke="#17324D" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M310 170v-56" fill="none"/>
+    <path d="M313 118q26 18 30 48h-30z" fill="#fff"/>
+    <path d="M307 126q-18 14-22 40h22z" fill="#FFD166"/>
+    <path d="M280 170h70q-6 22-22 22h-26q-16 0-22-22z" fill="#FF7A59"/>
+    <path d="M285 177h60" stroke="#fff" stroke-width="4"/>
+    <path d="M310 114l12 4-12 4z" fill="#47C98B" stroke-width="2"/>
+  </g>
+  <path d="M270 194q20-8 40 0t40 0v8h-80z" fill="#fff" opacity=".45"/>
+  <!-- 木碼頭 -->
+  <g stroke="#17324D" stroke-width="3" stroke-linejoin="round">
+    <rect x="86" y="204" width="14" height="52" rx="3" fill="#A8703F"/><rect x="248" y="204" width="14" height="52" rx="3" fill="#A8703F"/>
+    <rect x="56" y="188" width="248" height="22" rx="7" fill="#F2C894"/>
+    <path d="M56 199h248" fill="none" stroke-width="2" opacity=".5"/>
+  </g>
+  <g stroke="#A8703F" stroke-width="2" opacity=".7"><path d="M98 188v22M140 188v22M182 188v22M224 188v22M266 188v22"/></g>
+  <circle cx="68" cy="199" r="2.5" fill="#8A5A2B"/><circle cx="292" cy="199" r="2.5" fill="#8A5A2B"/>
+  <path d="M0 236q30-12 60 0t60 0 60 0 60 0 60 0 60 0v24H0z" fill="#fff" opacity=".35"/>
+  <path d="M0 248q30-10 60 0t60 0 60 0 60 0 60 0 60 0v12H0z" fill="#0B6FA4" opacity=".28"/>
+</svg>

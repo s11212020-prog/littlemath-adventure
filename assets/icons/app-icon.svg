@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="小小算術家：六島大冒險 圖示">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BDEBFF"/><stop offset="1" stop-color="#79D2F2"/></linearGradient>
+    <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4EAED1"/><stop offset="1" stop-color="#3498DB"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sky)"/>
+  <!-- 光束 -->
+  <path d="M256 150 L470 96 L470 196 Z" fill="#FFF2B8" opacity=".75"/>
+  <path d="M256 150 L42 96 L42 196 Z" fill="#FFF2B8" opacity=".75"/>
+  <!-- 海 -->
+  <path d="M0 360 Q64 330 128 360 T256 360 T384 360 T512 360 V512 H0 Z" fill="url(#sea)"/>
+  <path d="M0 410 Q64 384 128 410 T256 410 T384 410 T512 410 V512 H0 Z" fill="#3A86C8" opacity=".55"/>
+  <!-- 島 -->
+  <ellipse cx="256" cy="372" rx="132" ry="34" fill="#F5C26B"/>
+  <ellipse cx="256" cy="362" rx="118" ry="28" fill="#4CAF79"/>
+  <!-- 燈塔 -->
+  <path d="M222 350 L236 190 H276 L290 350 Z" fill="#FFFFFF"/>
+  <path d="M227 300 L231 262 H281 L285 300 Z" fill="#EE7B67"/>
+  <path d="M233 232 L236 190 H276 L279 232 Z" fill="#EE7B67"/>
+  <rect x="226" y="164" width="60" height="28" rx="8" fill="#24435B"/>
+  <path d="M232 164 L256 126 L280 164 Z" fill="#EE7B67"/>
+  <circle cx="256" cy="150" r="15" fill="#FFD45A"/>
+  <!-- 星 -->
+  <path d="M256 60 l9 19 21 3 -15 15 4 21 -19 -10 -19 10 4 -21 -15 -15 21 -3 z" fill="#FFD45A" stroke="#F5A65B" stroke-width="4" stroke-linejoin="round"/>
+</svg>
