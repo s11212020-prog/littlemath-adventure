@@ -1,0 +1,10 @@
+/* 階段 3.1：放大 200%～400% 時，畫面內容不會被切掉（取代 maximum-scale / user-scalable=no 的限制）
+   - 每個畫面都可以用手指／滑鼠／鍵盤捲動
+   - 原本「垂直置中」的畫面改成「安全置中」：空間夠就置中，不夠就從最上面開始往下捲（頂端不會被切掉）
+   - 不改任何顏色、字型、版面比例；只在內容放不下時才會出現捲動 */
+.screen { overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.screen:not(#screen-map):not(#screen-admin-dashboard) { justify-content: flex-start; }
+.screen:not(#screen-map):not(#screen-admin-dashboard)::before,
+.screen:not(#screen-map):not(#screen-admin-dashboard)::after { content: ""; display: block; flex: 0 0 0; margin: auto; }
+/* 彈窗在小視窗（或放大後）高度不夠時，也能捲動、不會超出 */
+.modal-content, .admin-modal-content { max-height: 90vh; max-height: 90dvh; overflow-y: auto; }

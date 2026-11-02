@@ -1,0 +1,468 @@
+/* ==========================================================================
+   《小小算術家：六島大冒險》階段 6／6.1：島內畫面樣式（6.1 加入六島視覺差異化）
+   港口（選區域）→ 學習動畫 → 題目 → 回饋／提示 → 結果卡 → 燈塔慶祝
+   規則：
+   - 只使用 tokens.css 變數與 components.css 的 ds- 元件；z-index 只用 --layer-*。
+   - 所有裝飾層（太陽、雲、浪、舞台背景、6.1 的島嶼場景 .ig-scene）都是 pointer-events: none，且 aria-hidden。
+   - 6.1：六島主題只靠 [data-island] 切換 --island-* 變數，版面、按鈕位置、操作方式完全相同。
+   - 狀態一律「顏色＋圖示＋文字」，不單靠顏色。
+   - 減少動態（系統偏好或 html.reduce-motion）：取消大幅動畫與長距離位移，位置直接到位。
+   - 放大 200%／400% 時為單欄、可捲動，不使用固定高度裁切內容。
+   ========================================================================== */
+
+/* ---------- 0. 六島主題（階段 6.1）：用 data-island 切換同一組變數，不複製六份 CSS ----------
+   --island-primary / secondary / soft / accent / card-border：主色、輔助色、淡底色、重點色、題目卡與區域標籤的邊框色
+   data-island：add＝青蛙池塘｜sub＝玩具收納港｜mul＝花盆種植園｜div＝糖果分享海灘｜wp＝故事書村｜mix＝秩序神殿
+   對比：卡片邊框色皆與白色 ≥ 4.5:1（序號圓章用白字）；文字一律墨水藍 #17324D 放在淡色底上。 */
+:root {
+  --island-primary: #2FAE8C; --island-secondary: #35B3D6; --island-soft: #DDF5E8; --island-accent: #F7E27A; --island-card-border: #1B7F6C;
+  --island-sky-1: #F6FBDD; --island-sky-2: #D5F2EA; --island-sky-3: #A9E0E6;
+  --island-on-primary: var(--ink); --island-cloud: #fff; --island-sun: block; --island-scene-o: .18;
+  --island-stage-1: #D9F3EE; --island-stage-2: #F4FCF4; --island-stage-3: #BFE8EE;
+  --island-stage-pattern: radial-gradient(ellipse 34% 11% at 20% 90%, rgba(53, 179, 214, .20) 0 99%, transparent 100%), radial-gradient(ellipse 28% 9% at 80% 82%, rgba(53, 179, 214, .15) 0 99%, transparent 100%);
+  --island-ribbon: radial-gradient(circle at 10px 0, var(--island-soft) 7px, transparent 7.5px) 0 0 / 20px 12px repeat-x, var(--island-primary);
+}
+[data-island="add"] { /* 青蛙池塘：青綠＋湖水藍＋嫩黃 */
+  --island-primary: #2FAE8C; --island-secondary: #35B3D6; --island-soft: #DDF5E8; --island-accent: #F7E27A; --island-card-border: #1B7F6C;
+  --island-sky-1: #F6FBDD; --island-sky-2: #D5F2EA; --island-sky-3: #A9E0E6; --island-cloud: #fff; --island-sun: block;
+  --island-stage-1: #D9F3EE; --island-stage-2: #F4FCF4; --island-stage-3: #BFE8EE;
+  --island-stage-pattern: radial-gradient(ellipse 34% 11% at 20% 90%, rgba(53, 179, 214, .20) 0 99%, transparent 100%), radial-gradient(ellipse 28% 9% at 80% 82%, rgba(53, 179, 214, .15) 0 99%, transparent 100%);
+  --island-ribbon: radial-gradient(circle at 10px 0, var(--island-soft) 7px, transparent 7.5px) 0 0 / 20px 12px repeat-x, var(--island-primary);
+}
+[data-island="sub"] { /* 玩具收納港：珊瑚橘＋天空藍＋木箱棕 */
+  --island-primary: #FF7A59; --island-secondary: #4DA8E0; --island-soft: #FFE5D9; --island-accent: #B9824F; --island-card-border: #B8431F;
+  --island-sky-1: #DDF2FF; --island-sky-2: #FFF0E2; --island-sky-3: #BFE0F4; --island-cloud: #fff; --island-sun: block;
+  --island-stage-1: #FFE9DC; --island-stage-2: #FFFDF8; --island-stage-3: #CFE9F8;
+  --island-stage-pattern: repeating-linear-gradient(90deg, transparent 0 54px, rgba(143, 94, 48, .16) 54px 56px) 0 100% / 100% 26% no-repeat, linear-gradient(180deg, rgba(185, 130, 79, .20), rgba(185, 130, 79, .20)) 0 100% / 100% 26% no-repeat;
+  --island-ribbon: repeating-linear-gradient(90deg, var(--island-accent) 0 34px, var(--island-card-border) 34px 37px);
+}
+[data-island="mul"] { /* 花盆種植園：黃綠＋向日葵黃＋泥土棕 */
+  --island-primary: #86C440; --island-secondary: #FFC93C; --island-soft: #F0F8D2; --island-accent: #8B5A33; --island-card-border: #4E7F1E;
+  --island-sky-1: #FFF8CC; --island-sky-2: #E9F5B8; --island-sky-3: #C6E48A; --island-cloud: #fff; --island-sun: block;
+  --island-stage-1: #F2F9D6; --island-stage-2: #FFFEF2; --island-stage-3: #E1F0B0;
+  --island-stage-pattern: repeating-linear-gradient(180deg, transparent 0 9px, rgba(139, 90, 51, .20) 9px 11px) 0 100% / 100% 24% no-repeat, linear-gradient(180deg, rgba(139, 90, 51, .14), rgba(139, 90, 51, .14)) 0 100% / 100% 24% no-repeat;
+  --island-ribbon: repeating-linear-gradient(90deg, var(--island-primary) 0 14px, var(--island-secondary) 14px 28px);
+}
+[data-island="div"] { /* 糖果分享海灘：粉紫＋糖果粉＋奶油黃＋淺藍 */
+  --island-primary: #F28DB6; --island-secondary: #B79CF0; --island-soft: #FCE6F1; --island-accent: #FFE9A8; --island-card-border: #9B3F86;
+  --island-sky-1: #FDE7F3; --island-sky-2: #FFF5DA; --island-sky-3: #C9E9F8; --island-cloud: #FFF3FA; --island-sun: none;
+  --island-stage-1: #FBE3F0; --island-stage-2: #FFFDF5; --island-stage-3: #E0F1FB;
+  --island-stage-pattern: repeating-linear-gradient(45deg, rgba(242, 141, 182, .12) 0 18px, transparent 18px 36px);
+  --island-ribbon: radial-gradient(circle, var(--island-secondary) 0 4px, transparent 4.5px) 0 50% / 16px 100% repeat-x, var(--island-primary);
+}
+[data-island="wp"] { /* 故事書村：薰衣草紫＋紙張米白＋書本藍 */
+  --island-primary: #A790EE; --island-secondary: #5B8FE0; --island-soft: #EDE7FD; --island-accent: #F2C14E; --island-card-border: #5A3FC4;
+  --island-sky-1: #F1EBFF; --island-sky-2: #FBF6EA; --island-sky-3: #D6E0FA; --island-cloud: #fff; --island-sun: none;
+  --island-stage-1: #EAE4FB; --island-stage-2: #FFFDF7; --island-stage-3: #D5E0F8;
+  --island-stage-pattern: linear-gradient(90deg, transparent 7.6%, rgba(230, 154, 176, .30) 7.6% 8%, transparent 8%), repeating-linear-gradient(180deg, transparent 0 31px, rgba(91, 143, 224, .14) 31px 33px);
+  --island-ribbon: repeating-linear-gradient(90deg, var(--island-primary) 0 22px, #fff 22px 24px);
+}
+[data-island="mix"] { /* 秩序神殿：深海藍＋靛紫＋金黃＋石柱米白 */
+  --island-primary: #3E5BC4; --island-secondary: #E8B63A; --island-soft: #E3E8FB; --island-accent: #E8B63A; --island-card-border: #1F2F8A;
+  --island-on-primary: #fff; --island-sky-1: #DDE3F9; --island-sky-2: #BCC8EF; --island-sky-3: #93A6E2; --island-cloud: #fff; --island-sun: none;
+  --island-stage-1: #E1E6FA; --island-stage-2: #FBFBFF; --island-stage-3: #C4CEF1;
+  --island-stage-pattern: repeating-linear-gradient(90deg, transparent 0 6.4%, rgba(31, 47, 138, .08) 6.4% 7%, transparent 7% 14%), linear-gradient(180deg, transparent 90%, rgba(232, 182, 58, .38) 90%);
+  --island-ribbon: repeating-linear-gradient(90deg, var(--island-accent) 0 10px, var(--island-card-border) 10px 20px);
+}
+
+/* 舊變數名稱（--ig-*）保留，指向新的島嶼主題變數，畫面其他地方不用改 */
+.ig-screen {
+  --ig-main: var(--island-primary); --ig-alt: var(--island-secondary); --ig-deep: var(--island-card-border);
+  --ig-soft: var(--island-soft); --ig-soft2: color-mix(in srgb, var(--island-secondary) 20%, #fff);
+  background: linear-gradient(180deg, var(--island-sky-1) 0%, var(--island-sky-2) 56%, var(--island-sky-3) 100%); justify-content: flex-start; align-items: stretch;
+}
+
+/* ---------- 1. 背景（純 CSS／SVG 裝飾；固定在視窗，不擋任何操作） ---------- */
+.ig-bg { position: fixed; inset: 0; z-index: var(--layer-bg); overflow: hidden; pointer-events: none; }
+.ig-sun { position: absolute; top: 5%; right: 7%; width: clamp(54px, 9vw, 110px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle, #FFEFB8 0 52%, var(--sun-gold) 53% 100%); box-shadow: 0 0 0 10px rgba(255, 209, 102, .26); pointer-events: none; display: var(--island-sun); }
+.ig-cloud { position: absolute; width: clamp(80px, 12vw, 150px); height: clamp(22px, 3vw, 34px); border-radius: 999px; background: var(--island-cloud); opacity: .85; pointer-events: none; animation: ig-drift 90s linear infinite; }
+.ig-cloud::before, .ig-cloud::after { content: ""; position: absolute; background: var(--island-cloud); border-radius: 50%; }
+.ig-cloud::before { width: 46%; aspect-ratio: 1; left: 14%; top: -52%; }
+.ig-cloud::after  { width: 34%; aspect-ratio: 1; left: 50%; top: -34%; }
+.ig-cloud--1 { top: 14%; left: 6%; }
+.ig-cloud--2 { top: 30%; left: 60%; animation-duration: 120s; animation-delay: -40s; opacity: .7; }
+[data-island="wp"] .ig-cloud, [data-island="mix"] .ig-cloud { display: none; }
+.ig-wave { position: absolute; left: 0; right: 0; bottom: 0; height: 14%; pointer-events: none;
+  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--island-secondary) 45%, transparent)); }
+@keyframes ig-drift { from { translate: -10vw 0; } to { translate: 18vw 0; } }
+
+/* 6.1 島嶼場景：上下兩層 SVG（sc-sky／sc-ground），淡色、置於所有內容之後 */
+.ig-scene { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.sc-layer { position: absolute; left: 0; width: 100%; display: block; overflow: visible; opacity: var(--island-scene-o); pointer-events: none; }
+.sc-sky { top: 0; height: min(24vw, 30vh); }
+.sc-ground { bottom: 0; height: min(42vw, 52vh); }
+.sc-img { object-fit: cover; }
+
+/* 環境動畫：都很慢、很小（水波、水流、繩子、風車、彩旗、書頁、光點）；減少動態時全部停止（見最下方） */
+@keyframes sc-ripple { 0% { transform: scale(.6); opacity: 0; } 25% { opacity: 1; } 100% { transform: scale(1.3); opacity: 0; } }
+@keyframes sc-flow { to { stroke-dashoffset: -56; } }
+@keyframes sc-bob { 50% { transform: translateY(3px); } }
+@keyframes sc-rope { from { transform: rotate(-2.5deg); } to { transform: rotate(2.5deg); } }
+@keyframes sc-spin { to { transform: rotate(360deg); } }
+@keyframes sc-sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+@keyframes sc-float { 50% { transform: translateY(-5px); } }
+@keyframes sc-mote { 0% { transform: translateY(14px); opacity: 0; } 30%, 70% { opacity: .9; } 100% { transform: translateY(-34px); opacity: 0; } }
+.sc-ripple { transform-box: fill-box; transform-origin: center; animation: sc-ripple 8s ease-out infinite; }
+.sc-flow { animation: sc-flow 10s linear infinite; }
+.sc-bob { animation: sc-bob 7s ease-in-out infinite; }
+.sc-rope { transform-box: fill-box; transform-origin: 50% 0; animation: sc-rope 6s ease-in-out infinite alternate; }
+.sc-spin { transform-box: fill-box; transform-origin: center; animation: sc-spin 70s linear infinite; }
+.sc-sway { transform-box: fill-box; transform-origin: 50% 0; animation: sc-sway 5s ease-in-out infinite alternate; }
+.sc-float { animation: sc-float 9s ease-in-out infinite; }
+.sc-mote { animation: sc-mote 16s ease-in-out infinite; }
+
+/* ---------- 2. 頂部列：回海圖｜島名＋區域｜三區燈塔＋本局星星 ---------- */
+.ig-hud {
+  position: relative; z-index: var(--layer-hud); width: 100%; max-width: 1120px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4);
+  padding: calc(var(--space-3) + var(--safe-top)) max(var(--gutter), var(--safe-right)) var(--space-2) max(var(--gutter), var(--safe-left));
+}
+.ig-back { flex: none; }
+.ig-title { display: flex; align-items: center; gap: var(--space-3); min-width: 0; flex: 1 1 260px; justify-content: center; }
+.ig-title__art { flex: none; width: clamp(54px, 7vw, 84px); aspect-ratio: 240 / 170; filter: drop-shadow(0 4px 0 rgba(23, 50, 77, .18)); }
+.ig-title__art svg { display: block; width: 100%; height: 100%; }
+.ig-title__txt { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.ig-title__txt h2 { margin: 0; font: var(--fw-black) var(--fs-h2)/var(--lh-tight) var(--font-sans); color: var(--ink); text-shadow: 0 2px 0 #fff; }
+.ig-zone-chip { --chip-bg: var(--ig-soft); --chip-line: var(--ig-deep); --chip-ink: var(--ink); }
+.ig-hud__right { display: flex; align-items: center; gap: var(--space-3); flex: none; }
+.ig-lamps { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; }
+.ig-lamp { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; padding: 2px 10px 2px 6px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, .86); border: 2px dashed var(--line); color: var(--ink-soft); font: var(--fw-heavy) 14px/1 var(--font-sans); }
+.ig-lamp__bulb .ds-icon { width: 24px; height: 24px; vertical-align: 0; opacity: .75; }
+.ig-lamp.is-lit { background: var(--state-warn-bg); border: 2px solid var(--gold-strong); color: var(--ink); box-shadow: 0 0 10px 1px rgba(255, 209, 102, .7); }
+.ig-lamp.is-lit .ig-lamp__bulb .ds-icon { opacity: 1; }
+.ig-lamp.is-current { outline: 3px solid var(--ink); outline-offset: 1px; }
+.ig-stars .ds-icon { width: 30px; height: 30px; }
+.ig-stars { white-space: nowrap; }
+.ig-stars__txt b { font-variant-numeric: tabular-nums; }
+
+/* ---------- 3. 主要區塊 ---------- */
+.ig-main { position: relative; z-index: var(--layer-map); width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 max(var(--gutter), var(--safe-right)) calc(var(--space-6) + var(--safe-bottom)) max(var(--gutter), var(--safe-left)); display: flex; flex-direction: column; align-items: stretch; gap: var(--space-3); }
+#interactive-view, #word-problem-view, #animation-view { display: none; flex-direction: column; align-items: stretch; width: 100%; gap: var(--space-3); }
+
+/* 題目進度：已完成＝勾勾、目前＝放大＋粗框＋黃底、之後＝空心（有圖示、數字，不靠顏色） */
+.ig-path { list-style: none; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; gap: 6px; min-height: 36px; }
+.ig-path:empty { display: none; }
+.ig-node { position: relative; flex: 0 1 34px; min-width: 0; }
+.ig-node__mark { display: grid; place-items: center; width: 100%; aspect-ratio: 1; min-width: 22px; border-radius: 50%; font: var(--fw-heavy) clamp(12px, 3.4vw, 16px)/1 var(--font-num); border: 2.5px solid var(--ink); background: #fff; color: var(--ink); transition: transform var(--dur-base) var(--ease-pop); }
+.ig-node__mark .ds-icon { width: 70%; height: 70%; }
+.ig-node.is-done .ig-node__mark { background: var(--mint); }
+.ig-node.is-now .ig-node__mark { background: var(--sun-gold); transform: scale(1.22); box-shadow: 0 0 0 4px #fff, 0 0 0 6px var(--ink); }
+.ig-node.is-next .ig-node__mark { border-style: dashed; border-color: var(--line); color: var(--ink-soft); background: rgba(255, 255, 255, .7); }
+
+/* ---------- 4. 題目卡 ---------- */
+.ig-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); grid-template-areas: "q" "helper" "pad"; align-items: start; }
+.ig-q { grid-area: q; } .ig-helper { grid-area: helper; } .ig-pad, .ig-work { grid-area: pad; }
+.ig-card {
+  position: relative; background: var(--surface); border: 3px solid var(--ig-deep); border-radius: var(--radius-lg); box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-4) var(--space-4); text-align: center; width: 100%; max-width: none; margin: 0; animation: ig-card-in var(--dur-slow) var(--ease-out) both;
+}
+@keyframes ig-card-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+/* 6.1：題目卡上緣的島嶼緞帶（只是裝飾，固定 12px，不佔版面） */
+.ig-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px; border-radius: calc(var(--radius-lg) - 3px) calc(var(--radius-lg) - 3px) 0 0; background: var(--island-ribbon); pointer-events: none; }
+.ig-badge { display: none; }   /* 區域名稱已顯示在頂部列的 chip，題目卡內不重複 */
+.ig-expr { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; margin: 4px 0 var(--space-2); font: var(--fw-black) clamp(34px, 7.5vw, 56px)/1.15 var(--font-num); color: var(--ink); }
+.ig-expr > span { min-width: 1.1em; padding: 2px 12px; border-radius: 14px; background: #fff; border: 2.5px solid var(--line-soft); box-shadow: 0 3px 0 var(--line-soft); transition: background var(--dur-base), border-color var(--dur-base); }
+.highlight-hint { background: var(--state-danger-bg) !important; border: 3px dashed var(--danger-strong) !important; border-radius: 10px; padding: 1px 6px; animation: ig-glow 1.2s ease-in-out 3; }
+@keyframes ig-glow { 50% { box-shadow: 0 0 0 5px rgba(217, 87, 99, .28); } }
+
+.ig-answer { display: flex; align-items: center; justify-content: center; gap: var(--space-3); margin-top: var(--space-2); flex-wrap: wrap; }
+.ig-eq { font: var(--fw-black) clamp(34px, 7vw, 52px)/1 var(--font-num); color: var(--ink); }
+.ig-input { width: clamp(130px, 44vw, 210px); min-height: 64px; padding: 4px 10px; text-align: center; font: var(--fw-black) clamp(34px, 7vw, 46px)/1.1 var(--font-num); color: var(--ink); background: #fff; border: 3.5px solid var(--ig-deep); border-radius: var(--radius-md); box-shadow: inset 0 3px 0 rgba(23, 50, 77, .08); -moz-appearance: textfield; appearance: textfield; }
+.ig-input::-webkit-outer-spin-button, .ig-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ig-input::placeholder { color: var(--line); opacity: 1; }
+.ig-input:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 3px; box-shadow: 0 0 0 3px var(--focus-halo), inset 0 3px 0 rgba(23, 50, 77, .08); }
+.ig-input:disabled { background: var(--state-success-bg); border-color: var(--mint-strong); color: var(--ink); opacity: 1; -webkit-text-fill-color: var(--ink); }
+.ig-input--wide { width: min(100%, 420px); font-size: clamp(24px, 5vw, 32px); }
+.ig-unit { font: var(--fw-heavy) var(--fs-h3)/1.2 var(--font-sans); color: var(--ink); }
+.apply-shake { animation: ig-shake .42s cubic-bezier(.36, .07, .19, .97) both; border-color: var(--danger-strong) !important; background: var(--state-danger-bg); }
+@keyframes ig-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
+/* 應用題文字 */
+.ig-read { float: right; margin: 0 0 var(--space-1) var(--space-3); }
+.ig-q:has(.ig-read)::after { content: ""; display: block; clear: both; }
+.ig-story { margin-top: var(--space-2); }
+.word-problem-text { display: block; padding: var(--space-2) var(--space-1); text-align: left; font: var(--fw-bold) var(--fs-question)/1.7 var(--font-sans); color: var(--ink); letter-spacing: .01em; }
+
+/* ---------- 5. 小幫手＋回饋泡泡（含提示 1～3 級） ---------- */
+.ig-helper { display: flex; align-items: flex-end; gap: var(--space-2); }
+.ig-crew { flex: none; width: 64px; display: grid; place-items: end center; filter: drop-shadow(0 3px 0 rgba(23, 50, 77, .15)); pointer-events: none; }
+.ig-crew:empty { display: none; }
+.ig-crew svg { display: block; max-width: 100%; height: auto; }
+.ig-crew--lg { width: 84px; }
+.feedback-bubble {
+  position: relative; flex: 1; min-width: 0; min-height: 64px; display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  padding: 12px 16px; margin: 0; text-align: left; white-space: pre-wrap; box-sizing: border-box;
+  font: var(--fw-bold) var(--fs-body)/1.55 var(--font-sans); color: var(--ink);
+  background: #fff; border: 3px solid var(--ocean-deep); border-radius: 20px 20px 20px 6px; box-shadow: var(--shadow-soft); transition: background var(--dur-base), border-color var(--dur-base);
+}
+.feedback-bubble.success { background: var(--state-success-bg); border-color: var(--mint-strong); }
+.feedback-bubble.error   { background: var(--state-danger-bg);  border-color: var(--danger-strong); }
+.feedback-bubble.info    { background: #fff; border-color: var(--island-card-border); }
+.fb-line { display: flex; align-items: flex-start; gap: 8px; }
+.fb-ic { flex: none; display: inline-flex; margin-top: 1px; }
+.fb-ic .ds-icon { width: 26px; height: 26px; vertical-align: 0; }
+.fb-tx { min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.fb-hint { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; padding: 2px 12px 2px 6px; min-height: 32px; border-radius: var(--radius-pill); background: var(--state-warn-bg); border: 2px solid var(--gold-strong); color: var(--ink); font: var(--fw-heavy) 15px/1 var(--font-sans); }
+.fb-hint .ds-icon { width: 22px; height: 22px; vertical-align: 0; }
+.fb-hint__dots { display: inline-flex; gap: 4px; margin-left: 2px; }
+.fb-hint__dots i { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--gold-strong); background: #fff; }
+.fb-hint__dots i.is-on { background: var(--gold-strong); }
+.fb-pop { animation: ig-pop .4s var(--ease-pop) both; }
+@keyframes ig-pop { 0% { transform: scale(.96); } 60% { transform: scale(1.02); } 100% { transform: none; } }
+
+/* ---------- 6. 數字鍵盤（沒有拖曳；每個鍵 ≥ 48px） ---------- */
+.ig-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 440px; justify-self: center; padding: 10px; margin: 0; background: color-mix(in srgb, var(--island-soft) 55%, rgba(255, 255, 255, .8)); border: 3px solid var(--ig-deep); border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); }
+.ig-key {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 54px; padding: 4px 6px; border-radius: var(--radius-md);
+  font: var(--fw-black) clamp(24px, 5vw, 30px)/1 var(--font-num); color: var(--ink); background: linear-gradient(180deg, #fff, var(--surface)); border: 2.5px solid var(--ink);
+  box-shadow: 0 4px 0 var(--surface-edge); cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; pointer-events: auto;
+  transition: transform var(--dur-fast), box-shadow var(--dur-fast);
+}
+.ig-key:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--surface-edge); }
+.ig-key:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 2px; box-shadow: 0 0 0 3px var(--focus-halo), 0 4px 0 var(--surface-edge); }
+.ig-key--clear { background: linear-gradient(180deg, var(--coral-hi), var(--coral)); box-shadow: 0 4px 0 var(--coral-edge); font-size: var(--fs-btn); }
+.ig-key--back  { background: linear-gradient(180deg, var(--gold-hi), var(--sun-gold)); box-shadow: 0 4px 0 var(--gold-edge); font-size: var(--fs-btn); }
+.ig-key--clear:active { box-shadow: 0 1px 0 var(--coral-edge); } .ig-key--back:active { box-shadow: 0 1px 0 var(--gold-edge); }
+.ig-key .ds-icon { width: 22px; height: 22px; vertical-align: 0; }
+.ig-submit { grid-column: 1 / -1; width: 100%; margin-top: 4px; }
+.ig-work .ig-submit { margin-top: var(--space-3); }
+/* 送出後回饋泡泡會長高、按鈕可能被推動；滑鼠停在按鈕邊緣時，「懸停上浮」會讓按鈕上下抖動，所以送出鈕不做上浮（只變亮） */
+@media (hover: hover) { .ig-submit.ds-btn:hover:not(:disabled):not([aria-disabled="true"]) { transform: none; --ds-shadow: 0 5px 0 var(--btn-edge), 0 10px 16px rgba(23, 50, 77, .18); } }
+.ig-kbd { display: inline-block; padding: 1px 8px; border-radius: 6px; border: 2px solid currentColor; font: var(--fw-heavy) 13px/1.3 var(--font-sans); opacity: .75; }
+@media (pointer: coarse) { .ig-kbd { display: none; } }
+
+/* 下一題／領星星：出現後固定在視窗下方，手機不必捲動就按得到 */
+.btn-next-pop {
+  display: none; align-items: center; justify-content: center; gap: 10px; width: min(100%, 460px); min-height: 60px; margin: 6px auto 0; padding: 10px 22px;
+  font: var(--fw-black) calc(var(--fs-btn) + 3px)/1.2 var(--font-sans); color: var(--ink); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  background: linear-gradient(180deg, var(--mint-hi), var(--mint) 60%); border: 3px solid var(--ink); border-radius: var(--radius-lg); box-shadow: 0 6px 0 var(--mint-edge), 0 12px 18px rgba(23, 50, 77, .2);
+  position: sticky; bottom: calc(10px + var(--safe-bottom)); z-index: var(--layer-sheet);
+}
+.btn-next-pop .ds-icon { width: 30px; height: 30px; vertical-align: 0; }
+.btn-next-pop:active { transform: translateY(5px); box-shadow: 0 1px 0 var(--mint-edge); }
+.btn-next-pop:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 3px; box-shadow: 0 0 0 3px var(--focus-halo), 0 6px 0 var(--mint-edge); }
+.btn-next-pop.is-visible { display: flex; animation: ig-card-in var(--dur-slow) var(--ease-pop) both; }
+.btn-finish-pop { background: linear-gradient(180deg, var(--gold-hi), var(--sun-gold) 60%); box-shadow: 0 6px 0 var(--gold-edge), 0 12px 18px rgba(23, 50, 77, .2); }
+.btn-finish-pop:active { box-shadow: 0 1px 0 var(--gold-edge); }
+#btn-anim-next.is-visible { position: static; }
+
+/* ---------- 7. 應用題：選運算、兩步驟 ---------- */
+.ig-work { text-align: left; padding: var(--space-4); }
+.op-title { display: flex; align-items: center; gap: 8px; margin: 0 0 var(--space-2); font: var(--fw-heavy) var(--fs-h3)/1.3 var(--font-sans); color: var(--ink); text-align: left; }
+.ig-step { display: inline-grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--island-card-border); color: #fff; border: 2.5px solid var(--ink); font: var(--fw-black) 18px/1 var(--font-num); }
+.op-buttons { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0 0 var(--space-4); }
+.btn-op {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 76px; padding: 8px 4px; min-width: 0;
+  font: var(--fw-heavy) clamp(16px, 4vw, 20px)/1.2 var(--font-sans); color: var(--ink); background: #fff; border: 3px solid var(--line); border-radius: var(--radius-md); box-shadow: 0 4px 0 var(--surface-edge);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform var(--dur-fast) var(--ease-out), background var(--dur-fast);
+}
+.btn-op .ds-icon { width: 34px; height: 34px; vertical-align: 0; }
+@media (hover: hover) { .btn-op:hover:not(:disabled) { border-color: var(--ig-deep); } }
+.btn-op:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--surface-edge); }
+.btn-op:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 3px; }
+/* 選中：粗框＋底色＋右上角打勾（不只靠顏色） */
+.btn-op.selected { background: var(--ig-soft); border-color: var(--ink); box-shadow: 0 0 0 3px var(--ig-main), 0 4px 0 var(--ig-deep); transform: translateY(-2px); }
+.btn-op.selected::after { content: ""; position: absolute; top: -9px; right: -7px; width: 26px; height: 26px; border-radius: 50%; background: var(--mint) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='m6 12.5 4 4 8-9' fill='none' stroke='%2317324D' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 70% no-repeat; border: 2.5px solid var(--ink); }
+.btn-op:disabled { opacity: .6; cursor: not-allowed; }
+.tw-panel { text-align: left; }
+.tw-mode { margin-bottom: var(--space-3); }
+.tw-step { border: 3px solid var(--line-soft); border-radius: var(--radius-card); padding: var(--space-3); margin-bottom: var(--space-3); background: #fff; transition: opacity var(--dur-base), border-color var(--dur-base), background var(--dur-base); }
+.tw-step .input-wrapper { display: flex; justify-content: center; }
+.tw-step.tw-done { border-color: var(--mint-strong); background: var(--state-success-bg); }
+.tw-step.tw-locked { opacity: .55; pointer-events: none; border-style: dashed; }
+.tw-unit-row { display: flex; gap: var(--space-2); align-items: center; justify-content: center; margin: var(--space-2) 0 var(--space-3); font: var(--fw-heavy) var(--fs-h3)/1.2 var(--font-sans); color: var(--ink); }
+.tw-unit-select { min-height: var(--tap-size); font-size: var(--fs-body); }
+.tw-panel .btn-op { min-height: 68px; }
+.tw-panel #tw-merged .input-wrapper { margin-bottom: var(--space-3); }
+
+/* ---------- 8. 學習動畫舞台 ---------- */
+#animation-view { align-items: center; }
+.ig-theater {
+  position: relative; container-type: inline-size; width: min(100%, calc(46dvh * 16 / 9), 780px); aspect-ratio: 16 / 9; margin: 0 auto; overflow: hidden;
+  background: linear-gradient(180deg, var(--island-stage-1) 0%, var(--island-stage-2) 62%, var(--island-stage-3) 100%); border: 4px solid var(--ig-deep); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); pointer-events: none;
+}
+.ig-theater::before { content: ""; position: absolute; inset: 0; background: var(--island-stage-pattern); pointer-events: none; }
+.ig-theater.is-wp { width: min(100%, 780px); aspect-ratio: auto; min-height: 230px; }
+.th-scene { position: absolute; inset: 0; pointer-events: none; }
+.th-prop { display: block; width: 100%; height: auto; }
+.th-actor { position: absolute; width: 12cqw; opacity: 0; z-index: 2; transition: left calc(var(--dur-slow) * 1.8) var(--ease-out), top calc(var(--dur-slow) * 1.8) var(--ease-out), opacity var(--dur-slow), transform var(--dur-slow); }
+.th-actor.is-in { opacity: 1; }
+.th-front { z-index: 3; }
+.th-actor.is-hop { animation: ig-hop .6s var(--ease-pop) 1; }
+@keyframes ig-hop { 40% { translate: 0 -14%; } }
+.th-actor.is-packed { opacity: .38; transform: scale(.8); }
+.th-actor.is-keep { filter: drop-shadow(0 0 6px var(--sun-gold)) drop-shadow(0 0 2px var(--sun-gold)); }
+.th-eq { position: absolute; top: 3%; left: 50%; translate: -50% 0; z-index: 5; padding: .1em .85em; border-radius: var(--radius-pill); background: var(--surface); border: 2.5px solid var(--ink); box-shadow: 0 3px 0 var(--surface-edge); font: var(--fw-black) clamp(18px, 5.4cqw, 36px)/1.25 var(--font-num); color: var(--ink); white-space: nowrap; opacity: 0; transition: opacity var(--dur-base); }
+.th-eq.is-on { opacity: 1; }
+.th-pond { position: absolute; left: 8%; width: 84%; bottom: 2%; }
+.th-crate { position: absolute; left: 64%; top: 22%; width: 30%; z-index: 1; }
+.th-row { position: absolute; left: 4%; right: 4%; bottom: 5%; display: flex; justify-content: space-around; align-items: flex-end; }
+.th-potcell { position: relative; width: 17cqw; }
+.th-seedwrap { position: absolute; left: 4%; right: 4%; bottom: 72%; opacity: 0; transform: translateY(10px) scale(.9); transition: opacity var(--dur-slow), transform var(--dur-slow) var(--ease-pop); }
+.th-seedwrap.is-in { opacity: 1; transform: none; }
+.th-pile { position: absolute; top: 15%; left: 10%; right: 10%; display: flex; flex-wrap: wrap; justify-content: center; gap: 1cqw; min-height: 14cqw; align-content: flex-start; }
+.th-pile .th-prop { width: 9.5cqw; }
+.th-row--plates { bottom: 3%; }
+.th-plate { position: relative; width: 22cqw; }
+.th-plate-candies { position: absolute; left: 6%; right: 6%; bottom: 38%; display: flex; flex-wrap: nowrap; justify-content: center; }
+.th-plate-candies .th-prop { width: 7.2cqw; flex: none; }
+.th-plate-candies.is-full { filter: drop-shadow(0 0 5px var(--sun-gold)); }
+.th-col { position: absolute; bottom: 0; width: 8cqw; opacity: .9; z-index: 0; }
+.th-col--l { left: 3%; } .th-col--r { right: 3%; }
+.th-steps { position: absolute; top: 5%; left: 50%; translate: -50% 0; z-index: 5; display: flex; gap: 1.2cqw; list-style: none; margin: 0; padding: 0; white-space: nowrap; }
+.th-steps__li { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px 3px 6px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, .9); border: 2px dashed var(--line); color: var(--ink-soft); font: var(--fw-heavy) max(14px, 3cqw)/1.1 var(--font-sans); transition: background var(--dur-base); }
+.th-steps__li .ds-icon { width: 22px; height: 22px; vertical-align: 0; }
+.th-steps__li.is-past { background: var(--state-success-bg); border: 2px solid var(--mint-strong); color: var(--ink); }
+.th-steps__li.is-now { background: var(--sun-gold); border: 2.5px solid var(--ink); color: var(--ink); }
+.th-expr { position: absolute; left: 0; right: 0; top: 56%; translate: 0 -50%; z-index: 2; display: flex; justify-content: center; align-items: center; gap: 1.6cqw; }
+.th-tile { min-width: 10cqw; padding: .05em .35em; text-align: center; font: var(--fw-black) clamp(22px, 8cqw, 52px)/1.25 var(--font-num); color: var(--ink); background: var(--sun-gold); border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--gold-edge); transition: background var(--dur-base), outline-color var(--dur-base); }
+.th-op { font: var(--fw-black) clamp(22px, 8cqw, 52px)/1.2 var(--font-num); color: var(--ink); }
+.th-tile.is-focus, .th-op.is-focus { outline: 4px dashed var(--danger-strong); outline-offset: 4px; border-radius: 14px; animation: ig-glow 1.2s ease-in-out infinite; }
+.th-tile.is-result { background: var(--mint); }
+.th-tile.is-gone, .th-op.is-gone { display: none; }
+/* 應用題島：關鍵字動畫 */
+.th-wp { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 12px 14px; }
+.ig-theater.is-wp .th-wp { position: static; min-height: 230px; }
+.th-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.th-chip { padding: 2px 12px; border-radius: var(--radius-pill); border: 2.5px solid var(--ink); font: var(--fw-black) 16px/1.35 var(--font-sans); color: var(--ink); transition: opacity var(--dur-slow), transform var(--dur-slow) var(--ease-pop); }
+.th-chip.is-add, .th-sum.is-add { background: var(--mint); } .th-chip.is-sub, .th-sum.is-sub { background: var(--coral); }
+.th-chip.is-mul, .th-sum.is-mul { background: var(--sun-gold); } .th-chip.is-div, .th-sum.is-div { background: var(--island-div); }
+.th-chip.is-wait { opacity: .45; } .th-chip.is-past { opacity: .8; } .th-chip.is-now { opacity: 1; transform: scale(1.1); box-shadow: 0 3px 0 rgba(23, 50, 77, .3); }
+.th-wp__title { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--surface); border: 2.5px solid var(--ink); border-radius: var(--radius-md); font: var(--fw-black) var(--fs-h3)/1.3 var(--font-sans); color: var(--ink); }
+.th-wp__title .ds-icon { width: 36px; height: 36px; vertical-align: 0; }
+.th-wp__story { width: 100%; padding: 10px 14px; background: var(--surface); border: 2.5px solid var(--ink); border-radius: var(--radius-md); box-shadow: 0 4px 0 var(--surface-edge); text-align: left; font: var(--fw-bold) var(--fs-body)/1.7 var(--font-sans); color: var(--ink); }
+.th-kw { padding: 0 .2em; border-radius: 6px; border: 3px solid transparent; transition: background var(--dur-slow), border-color var(--dur-slow); }
+.th-kw.is-lit { background: var(--state-danger-bg); border: 3px dashed var(--danger-strong); }
+.th-wp__more { max-width: 100%; text-align: center; font: var(--fw-bold) 15px/1.5 var(--font-sans); color: var(--ink); opacity: 0; transition: opacity var(--dur-slow); }
+.th-wp__more.is-on { opacity: 1; }
+.th-wp--sum { display: grid; grid-template-columns: 1fr 1fr; align-content: center; gap: 10px; }
+.th-sum { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 8px 12px; border: 2.5px solid var(--ink); border-radius: var(--radius-md); color: var(--ink); text-align: left; }
+.th-sum strong { font: var(--fw-black) var(--fs-h3)/1.2 var(--font-sans); } .th-sum span { font: var(--fw-bold) 15px/1.4 var(--font-sans); }
+
+.ig-sub { width: min(100%, 780px); min-height: 3.4em; display: flex; align-items: center; justify-content: center; padding: 10px 16px; margin: 0 auto; text-align: center; font: var(--fw-heavy) var(--fs-body)/1.5 var(--font-sans); color: var(--ink); background: var(--surface); border: 2.5px solid var(--ink); border-radius: var(--radius-md); box-shadow: 0 4px 0 var(--surface-edge); }
+.ig-anim-ctl { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.ig-anim-ctl .anim-ctl[aria-pressed="true"] { background: var(--ocean-pale); border-color: var(--ocean-deep); box-shadow: inset 0 0 0 2px var(--ocean-deep), var(--ds-shadow); }
+.ig-anim-ctl .anim-ctl[aria-pressed="false"] { border-style: dashed; }
+
+/* ---------- 9. 結果卡 ---------- */
+.ig-result { display: none; width: 100%; }
+.ig-result.is-visible { display: block; }
+.ig-result__card { width: min(100%, 620px); margin: 0 auto; padding: var(--space-5) var(--space-4); text-align: center; position: relative; background: var(--surface); border: 3px solid var(--ig-deep); border-radius: 28px; box-shadow: var(--shadow-pop); animation: ig-card-in var(--dur-slow) var(--ease-pop) both; }
+.ig-result__card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px; border-radius: 25px 25px 0 0; background: var(--island-ribbon); pointer-events: none; }
+.ig-result__head { display: flex; align-items: center; justify-content: center; gap: var(--space-3); text-align: left; }
+.ig-result__title { margin: 0 0 4px; font: var(--fw-black) var(--fs-h1)/1.15 var(--font-sans); color: var(--ink); outline: none; }
+.ig-result__msg { margin: 0; font: var(--fw-bold) var(--fs-body)/1.5 var(--font-sans); color: var(--ink-soft); }
+.ig-result__stars { display: flex; justify-content: center; gap: 6px; margin: var(--space-4) 0 var(--space-3); }
+.ig-rs { display: inline-flex; }
+.ig-rs .ds-icon { width: clamp(52px, 14vw, 72px); height: clamp(52px, 14vw, 72px); vertical-align: 0; }
+.ig-rs.is-on { animation: ig-star-in .6s var(--ease-pop) both; animation-delay: calc(var(--i) * 180ms); filter: drop-shadow(0 0 8px rgba(255, 209, 102, .9)); }
+.ig-rs.is-off { opacity: .75; }
+@keyframes ig-star-in { from { transform: scale(0) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.ig-result__facts { list-style: none; margin: 0 0 var(--space-4); padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.ig-result__lamps { list-style: none; margin: 0 0 var(--space-3); padding: 0; display: flex; justify-content: center; gap: var(--space-4); }
+.ig-rl { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 76px; padding: 8px 10px; border-radius: var(--radius-md); border: 2.5px dashed var(--line); background: rgba(255, 255, 255, .75); font: var(--fw-heavy) var(--fs-body)/1.2 var(--font-sans); color: var(--ink-soft); }
+.ig-rl .ds-icon { width: 38px; height: 38px; vertical-align: 0; opacity: .7; }
+.ig-rl.is-lit { border: 2.5px solid var(--gold-strong); background: var(--state-warn-bg); color: var(--ink); box-shadow: 0 0 14px 2px rgba(255, 209, 102, .65); }
+.ig-rl.is-lit .ds-icon { opacity: 1; }
+.ig-rl.is-new { animation: ig-glow-gold 1.4s ease-in-out 3; }
+.ig-rl__new { position: absolute; top: -12px; right: -8px; padding: 1px 8px; border-radius: var(--radius-pill); background: var(--coral); border: 2px solid var(--ink); color: var(--ink); font: var(--fw-black) 14px/1.3 var(--font-sans); }
+@keyframes ig-glow-gold { 50% { box-shadow: 0 0 0 6px rgba(255, 209, 102, .55), 0 0 18px 6px rgba(255, 209, 102, .8); } }
+.ig-result__lh { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; font: var(--fw-heavy) var(--fs-body)/1.5 var(--font-sans); color: var(--ink); }
+.ig-result__lh .ds-icon { width: 26px; height: 26px; vertical-align: 0; }
+/* 完成後：題目區收起來，只留結果卡與「領取星星回海圖」 */
+.ig-finished .ig-grid, .ig-finished .ig-path, .ig-finished .ig-pad { display: none !important; }
+.ig-finished #btn-finish.is-visible, .ig-finished #wp-btn-finish.is-visible { margin-top: var(--space-3); }
+
+/* ---------- 10. 港口（選擇學習區／練習區／掌握確認區） ---------- */
+.zp-overlay { z-index: var(--layer-dialog); background: rgba(23, 50, 77, .62); backdrop-filter: none; align-items: center; justify-content: center; padding: max(var(--space-3), var(--safe-top)) var(--space-3) max(var(--space-3), var(--safe-bottom)); }
+.zp-dialog { width: min(600px, 100%); max-height: calc(100dvh - 2 * var(--space-3)); overflow-y: auto; padding: var(--space-5); text-align: left; background: var(--surface); border: 3px solid var(--ink); border-radius: 28px; box-shadow: var(--shadow-pop); }
+.zp-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); padding: 8px 12px; background: var(--island-soft); border: 3px solid var(--island-card-border); border-radius: 20px; }
+.zp-dialog { border-top-color: var(--island-card-border); }
+.zp-head__art { flex: none; width: clamp(76px, 20vw, 116px); aspect-ratio: 240 / 170; filter: drop-shadow(0 4px 0 rgba(23, 50, 77, .18)); }
+.zp-head__art svg { display: block; width: 100%; height: 100%; }
+.zp-head__txt { min-width: 0; flex: 1; }
+.zp-head__txt h2 { margin: 0 0 var(--space-2); font: var(--fw-black) var(--fs-h2)/var(--lh-tight) var(--font-sans); color: var(--ink); }
+.zp-sum { display: flex; flex-wrap: wrap; gap: 6px; }
+.zp-tip { margin: var(--space-3) 0 var(--space-2); font: var(--fw-medium) var(--fs-caption)/1.5 var(--font-sans); color: var(--ink-soft); }
+.zp-zones { display: flex; flex-direction: column; gap: 10px; }
+.zp-zone {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; width: 100%; min-height: 84px; padding: 10px 14px; text-align: left; font-family: var(--font-sans); color: var(--ink);
+  background: #fff; border: 3px solid var(--ink); border-radius: 20px; box-shadow: 0 5px 0 var(--surface-edge); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast);
+}
+@media (hover: hover) { .zp-zone:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 0 var(--surface-edge); } }
+.zp-zone:active:not(:disabled) { transform: translateY(3px); box-shadow: 0 1px 0 var(--surface-edge); }
+.zp-zone:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 3px; box-shadow: 0 0 0 3px var(--focus-halo), 0 5px 0 var(--surface-edge); }
+.zp-zone.is-open { background: var(--island-soft); }
+.zp-zone.is-done { background: var(--state-success-bg); border-color: var(--mint-strong); }
+.zp-zone.is-locked, .zp-zone:disabled { background: var(--disabled-face); color: var(--disabled-ink); border-style: dashed; border-color: var(--line); box-shadow: none; cursor: not-allowed; }
+.zp-zone__no { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--island-primary); border: 2.5px solid var(--ink); font: var(--fw-black) 24px/1 var(--font-num); color: var(--island-on-primary); }
+.zp-zone.is-done .zp-zone__no { background: var(--mint); color: var(--ink); } .zp-zone.is-locked .zp-zone__no { background: #fff; border-style: dashed; color: var(--ink); }
+.zp-zone__no .ds-icon { width: 28px; height: 28px; vertical-align: 0; }
+.zp-zone__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.zp-zone__name { font: var(--fw-black) var(--fs-h3)/1.2 var(--font-sans); }
+.zp-zone__sub, .zp-zone__rec { font: var(--fw-medium) var(--fs-caption)/1.4 var(--font-sans); color: inherit; opacity: .9; }
+.zp-zone:not(:disabled) .zp-zone__sub, .zp-zone:not(:disabled) .zp-zone__rec { color: var(--ink-soft); opacity: 1; }
+.zp-zone__side { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.zp-cancel { margin-top: var(--space-3); width: 100%; }
+@media (max-width: 520px) {
+  .zp-dialog { padding: var(--space-4); }
+  .zp-zone { grid-template-columns: auto minmax(0, 1fr); }
+  .zp-zone__side { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .zp-head { align-items: flex-start; }
+}
+
+/* ---------- 11. 燈塔慶祝（回到海圖後出現；不擋操作，只有卡片本身可點） ---------- */
+.lh-celebrate { position: fixed; inset: 0; display: none; align-items: flex-end; justify-content: center; z-index: var(--layer-toast); pointer-events: none; padding: 0 var(--space-3); }
+.lh-card { pointer-events: auto; display: flex; align-items: center; gap: var(--space-3); max-width: min(94vw, 560px); margin-bottom: calc(10vh + var(--safe-bottom)); padding: 12px 16px; background: var(--surface); border: 3px solid var(--ink); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop); font: var(--fw-heavy) var(--fs-body)/1.5 var(--font-sans); color: var(--ink); animation: ig-card-in var(--dur-slow) var(--ease-pop) both; }
+.lh-card__art { flex: none; width: 76px; height: 76px; display: grid; place-items: center; pointer-events: none; }
+.lh-card__art svg { width: 100%; height: 100%; }
+.lh-skip { flex: none; }
+
+/* ---------- 12. 版面：平板／桌機兩欄、手機收緊 ---------- */
+@media (min-width: 900px) {
+  .ig-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-areas: "q pad" "helper pad"; column-gap: var(--space-5); }
+  .ig-pad, .ig-work { align-self: start; max-width: none; justify-self: stretch; }
+  .ig-key { min-height: 60px; }
+}
+@media (max-width: 599px) {
+  .ig-hud { padding-top: calc(var(--space-2) + var(--safe-top)); gap: 6px 10px; }
+  .ig-back .ds-icon { width: 24px; height: 24px; }
+  .ig-back { order: 1; }
+  .ig-hud__right { display: contents; }
+  .ig-stars { order: 2; margin-left: auto; padding-right: 12px; white-space: nowrap; }
+  .ig-title { order: 3; flex-basis: 100%; justify-content: flex-start; gap: 10px; }
+  .ig-title__art { width: 56px; }
+  .ig-title__txt { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+  .ig-title__txt h2 { font-size: 22px; }
+  .ig-lamps { order: 4; flex-basis: 100%; gap: 6px; }
+  .ig-lamp { flex: 1; justify-content: center; padding: 2px 6px 2px 4px; gap: 2px; min-height: 36px; font-size: 14px; white-space: nowrap; }
+  .ig-main { gap: var(--space-2); }
+  .ig-card { padding: 12px 12px 12px; }
+  .ig-expr { margin: 0 0 4px; }
+  .ig-input { min-height: 58px; }
+  .ig-crew { width: 52px; } .ig-crew--lg { width: 68px; }
+  .feedback-bubble { padding: 10px 12px; min-height: 58px; }
+  .ig-pad { padding: 8px; gap: 6px; }
+  .ig-key { min-height: 50px; }
+  .btn-op { min-height: 72px; } .btn-op .ds-icon { width: 30px; height: 30px; }
+  .ig-result__head { flex-direction: column; text-align: center; }
+  .ig-result__lamps { gap: var(--space-2); }
+  .ig-rl { min-width: 64px; padding: 6px; }
+  .th-chip { font-size: 15px; padding: 1px 9px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .ig-theater { width: min(100%, calc(60dvh * 16 / 9), 780px); }
+}
+
+/* ---------- 13. 減少動態：取消大幅動畫與長距離位移（結果仍然看得到） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ig-cloud, .ig-card, .ig-result__card, .btn-next-pop.is-visible, .lh-card, .fb-pop, .th-actor.is-hop, .ig-rs.is-on, .ig-rl.is-new, .highlight-hint, .th-tile.is-focus, .th-op.is-focus, .apply-shake { animation: none !important; }
+  .th-actor, .th-seedwrap, .th-chip { transition-duration: .01ms !important; }
+  .ig-scene, .ig-scene * { animation: none !important; }
+}
+:root.reduce-motion .ig-cloud, :root.reduce-motion .ig-card, :root.reduce-motion .ig-result__card, :root.reduce-motion .btn-next-pop.is-visible, :root.reduce-motion .lh-card, :root.reduce-motion .fb-pop,
+:root.reduce-motion .th-actor.is-hop, :root.reduce-motion .ig-rs.is-on, :root.reduce-motion .ig-rl.is-new, :root.reduce-motion .highlight-hint, :root.reduce-motion .th-tile.is-focus, :root.reduce-motion .th-op.is-focus, :root.reduce-motion .apply-shake { animation: none !important; }
+:root.reduce-motion .th-actor, :root.reduce-motion .th-seedwrap, :root.reduce-motion .th-chip { transition-duration: .01ms !important; }
+
+:root.reduce-motion .ig-scene, :root.reduce-motion .ig-scene * { animation: none !important; }

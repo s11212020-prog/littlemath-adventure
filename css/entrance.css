@@ -1,0 +1,223 @@
+/* ==========================================================================
+   《小小算術家：六島大冒險》入口畫面樣式（階段 4）
+   身分選擇、學生登入、教師登入、船員登記所。
+   只使用 tokens.css 的變數與 components.css 的 ds- 元件；沒有寫死的 z-index 數字。
+   所有裝飾層（海、雲、島）都是 pointer-events: none，不會擋住任何按鈕。
+   ========================================================================== */
+
+/* ---------- 1. 海景背景（純 CSS，不載入任何外部圖） ---------- */
+.en-sea {
+  position: absolute; inset: 0; z-index: var(--layer-bg); overflow: hidden; pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 0 66%, var(--ocean-bright) 66%, #139FC4 86%, var(--ocean-deep) 100%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--ocean-pale) 66%);
+}
+.en-sea--teacher {
+  background:
+    linear-gradient(180deg, transparent 0 66%, #2BA9C8 66%, var(--ocean-deep) 88%, var(--deep-edge) 100%),
+    linear-gradient(180deg, #9ED6F0 0%, #D3F0F4 66%);
+}
+.en-sun {
+  position: absolute; top: 7%; right: 11%; width: clamp(64px, 11vw, 124px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, #FFEFB8 0 52%, var(--sun-gold) 53% 100%);
+  box-shadow: 0 0 0 clamp(8px, 1.4vw, 16px) rgba(255, 209, 102, .28), 0 0 56px rgba(255, 209, 102, .55);
+}
+.en-cloud { position: absolute; width: clamp(90px, 14vw, 170px); height: clamp(24px, 3.6vw, 40px); border-radius: 999px; background: #fff; opacity: .92; animation: en-drift 70s linear infinite; }
+.en-cloud::before, .en-cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+.en-cloud::before { width: 46%; aspect-ratio: 1; left: 14%; top: -52%; }
+.en-cloud::after  { width: 34%; aspect-ratio: 1; left: 50%; top: -34%; }
+.en-cloud--1 { top: 12%; left: 6%; }
+.en-cloud--2 { top: 26%; left: 58%; animation-duration: 95s; animation-delay: -30s; opacity: .8; }
+.en-cloud--3 { top: 6%; left: 34%; animation-duration: 120s; animation-delay: -60s; opacity: .7; transform: scale(.75); }
+@keyframes en-drift { from { translate: -14vw 0; } to { translate: 22vw 0; } }
+.en-isle { position: absolute; bottom: 34%; border-radius: 50% 50% 0 0 / 100% 100% 0 0; background: linear-gradient(180deg, var(--island-mul) 0 62%, #F2C894 62% 100%); }
+.en-isle--1 { left: 4%; width: clamp(120px, 24vw, 300px); height: clamp(36px, 7vw, 86px); }
+.en-isle--2 { right: 17%; width: clamp(90px, 16vw, 210px); height: clamp(28px, 5vw, 62px); background: linear-gradient(180deg, var(--island-add) 0 62%, #F2C894 62% 100%); }
+.en-lh {
+  position: absolute; bottom: calc(34% + clamp(14px, 2.6vw, 34px)); right: calc(17% + clamp(30px, 6vw, 80px)); width: clamp(14px, 2vw, 24px); height: clamp(40px, 6.2vw, 78px);
+  background: repeating-linear-gradient(180deg, #fff 0 33%, var(--coral) 33% 66%); clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
+}
+.en-lh::before { content: ""; position: absolute; left: 24%; right: 24%; top: -10%; height: 12%; background: var(--sun-gold); }
+.en-waves { position: absolute; left: 0; right: 0; bottom: 0; height: 24%; opacity: .95;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 24' preserveAspectRatio='none'%3E%3Cpath d='M0 12Q15 0 30 12T60 12T90 12T120 12V24H0Z' fill='%23ffffff' fill-opacity='.3'/%3E%3C/svg%3E") repeat-x 0 12% / 120px 22px,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 24' preserveAspectRatio='none'%3E%3Cpath d='M0 12Q15 0 30 12T60 12T90 12T120 12V24H0Z' fill='%230B6FA4' fill-opacity='.22'/%3E%3C/svg%3E") repeat-x 40px 62% / 120px 22px;
+}
+/* 手機：太陽縮小、貼近右上角、光暈減弱，避免和折行的標題互相干擾 */
+@media (max-width: 599px) {
+  .en-sun { top: 1.5%; right: 4%; width: 44px; opacity: .8; box-shadow: 0 0 0 6px rgba(255, 209, 102, .2), 0 0 18px rgba(255, 209, 102, .35); }
+  .en-cloud--3 { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .en-cloud { animation: none; } }
+:root.reduce-motion .en-cloud { animation: none; }
+
+/* ---------- 2. 共用版面 ---------- */
+.en-wrap {
+  position: relative; z-index: var(--layer-map); width: 100%; max-width: 1120px; margin-inline: auto;
+  padding: calc(var(--space-6) + var(--safe-top)) calc(var(--gutter) + var(--safe-right)) calc(var(--space-6) + var(--safe-bottom)) calc(var(--gutter) + var(--safe-left));
+  display: flex; flex-direction: column; align-items: center; pointer-events: auto;
+}
+.en-lead { margin: var(--space-2) 0 var(--space-5); max-width: 36em; text-align: center; font: var(--fw-heavy) var(--fs-body)/1.5 var(--font-sans); color: var(--ink); text-shadow: 0 1px 0 rgba(255, 255, 255, .9), 0 0 12px rgba(255, 255, 255, .9); }
+.en-card__brand { display: inline-block; margin: 0 0 var(--space-3); padding: 2px 14px; border: 2px solid var(--line-soft); border-radius: var(--radius-pill); background: var(--white-solid); color: var(--ocean-deep); font-size: var(--fs-caption); }
+
+/* ---------- 3. 身分選擇 ---------- */
+.en-hero { margin: var(--space-4) 0 0; padding: 0 var(--space-3); text-align: center; -webkit-text-stroke-width: 7px; }
+.en-hero .bn-main, .en-hero .bn-sub { display: inline-block; }
+.en-roles { display: flex; flex-wrap: wrap; gap: var(--space-6); justify-content: center; width: 100%; }
+.en-role {
+  --role-edge: var(--mint-edge); --role-bg: var(--state-success-bg);
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+  width: min(300px, 100%); min-height: var(--tap-size); padding: var(--space-5) var(--space-4) var(--space-5);
+  font: inherit; color: var(--ink); text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  background-color: var(--surface);
+  background-image: repeating-linear-gradient(0deg, rgba(23, 50, 77, .035) 0 1px, transparent 1px 5px), repeating-linear-gradient(90deg, rgba(23, 50, 77, .035) 0 1px, transparent 1px 5px);
+  border: 2.5px solid var(--ink); border-radius: var(--radius-card);
+  box-shadow: 0 7px 0 var(--role-edge), var(--shadow-pop);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.en-role--teacher { --role-edge: var(--deep-edge); --role-bg: var(--ocean-pale); }
+@media (hover: hover) { .en-role:hover { transform: translateY(-5px); box-shadow: 0 12px 0 var(--role-edge), var(--shadow-pop); } }
+.en-role:active { transform: translateY(4px); box-shadow: 0 2px 0 var(--role-edge), var(--shadow-soft); }
+.en-role:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 4px; box-shadow: 0 0 0 4px var(--focus-halo), 0 7px 0 var(--role-edge); }
+.en-role__medal { display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; background: var(--role-bg); border: 3px solid var(--ink); box-shadow: inset 0 -5px 0 rgba(23, 50, 77, .08); }
+.en-role__medal .ds-icon { width: 64px; height: 64px; }
+.en-role__plank { font-size: var(--fs-h2); }
+.en-role__desc { font: var(--fw-bold) var(--fs-body)/1.5 var(--font-sans); color: var(--ink-soft); }
+.en-role__go { margin-top: var(--space-1); }
+/* 入口下方的一排小船員（純裝飾，站在木碼頭上；矮螢幕就不顯示，避免擠掉按鈕） */
+.en-crewrow { display: none; position: relative; justify-content: center; align-items: flex-end; gap: clamp(6px, 1.6vw, 22px); margin-top: var(--space-6); padding-bottom: 12px; pointer-events: none; }
+.en-crewrow::after { content: ""; position: absolute; left: -2%; right: -2%; bottom: 0; height: 18px; border: 2.5px solid var(--ink); border-radius: 9px; background: linear-gradient(180deg, var(--wood-hi), var(--wood-lo)); box-shadow: 0 4px 0 var(--wood-edge); z-index: -1; }
+.en-crewrow__one svg { height: clamp(96px, 15vh, 150px); width: auto; }
+@media (min-width: 600px) and (min-height: 700px) { .en-crewrow { display: flex; } }
+
+/* ---------- 4. 學生登入／教師登入卡片 ---------- */
+.en-wrap--card { max-width: 520px; }
+.en-card { width: 100%; text-align: center; padding: var(--space-6) var(--space-5); border-color: var(--ink); box-shadow: 0 7px 0 var(--wood-edge), var(--shadow-pop); }
+.en-card--teacher { box-shadow: 0 7px 0 var(--deep-edge), var(--shadow-pop); }
+.en-card__title { margin: 0 0 var(--space-4); font-size: var(--fs-h2); max-width: 100%; }
+.en-card__title .ds-icon { width: 1.35em; height: 1.35em; flex: none; }
+.en-card .ds-field { text-align: left; }
+.en-card .ds-input { font-size: max(18px, var(--fs-body)); text-align: center; letter-spacing: .02em; }
+.en-card .ds-input:focus-visible { border-color: var(--ocean-deep); }
+.en-actions { display: grid; gap: var(--space-3); margin: var(--space-4) 0 var(--space-3); }
+.en-back { margin-top: var(--space-2); }
+.en-error { justify-content: center; margin: var(--space-2) 0 0; text-align: center; }
+.en-error:empty { display: none; }
+.en-card .ds-btn { white-space: normal; }
+
+/* ---------- 5. 船員登記所 ---------- */
+.en-crew { max-width: 1160px; }
+.en-crew__head { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.en-crew__top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); width: 100%; margin-bottom: var(--space-3); }
+.en-crew__top .en-card__brand { margin: 0; }
+.en-crew__title { margin: 0; font-size: var(--fs-h1); }
+.en-crew__title:focus { outline: none; }
+.en-crew__title:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 4px; }
+.en-crew .en-lead { margin-bottom: var(--space-4); }
+
+/* 手機（預設）：碼頭預覽在最上面，下面是兩欄船員卡，最下面是選項；「登船出發」固定在底部 */
+.crew-stage { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); width: 100%; }
+.crew-card {
+  position: relative; display: grid; justify-items: center; align-content: start; gap: var(--space-1); min-width: 0;
+  padding: var(--space-3) var(--space-2) var(--space-3); cursor: pointer; text-align: center; color: var(--ink);
+  background: var(--surface); border: 2.5px solid var(--line); border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft); -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), border-color var(--dur-fast), background-color var(--dur-fast);
+}
+.crew-card__fig svg { height: 118px; width: auto; max-width: 100%; }
+.crew-card__text { display: grid; gap: 2px; min-width: 0; }
+.crew-card__name { font: var(--fw-black) var(--fs-h3)/var(--lh-tight) var(--font-sans); }
+.crew-card__look { font: var(--fw-medium) var(--fs-caption)/1.35 var(--font-sans); color: var(--ink-soft); overflow-wrap: anywhere; }
+.crew-card__tick { position: absolute; top: 8px; right: 8px; display: none; width: 30px; height: 30px; }
+.crew-card__tick .ds-icon { width: 100%; height: 100%; }
+.crew-card.is-picked { background: var(--ocean-pale); border-color: var(--ink); box-shadow: 0 0 0 4px var(--ocean-bright), var(--shadow-card); }
+.crew-card.is-picked .crew-card__tick { display: block; }
+@media (hover: hover) { .crew-card:hover { transform: translateY(-3px); border-color: var(--ocean-deep); } }
+.crew-card:active { transform: translateY(2px); }
+.crew-card:focus-within { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 3px; box-shadow: 0 0 0 3px var(--focus-halo), var(--shadow-soft); }
+@supports selector(:has(*)) { .crew-card:focus-within:not(:has(:focus-visible)) { outline: none; box-shadow: var(--shadow-soft); } .crew-card.is-picked:focus-within:not(:has(:focus-visible)) { box-shadow: 0 0 0 4px var(--ocean-bright), var(--shadow-card); } }
+
+.crew-dock { display: contents; }
+.crew-dock__head { grid-column: 1 / -1; order: -1; display: grid; justify-items: center; gap: var(--space-2); text-align: center; }
+.crew-dock__scene {
+  position: relative; width: min(100%, 340px); aspect-ratio: 360 / 260; overflow: hidden;
+  background: #BDEBFF url("../assets/images/crew-dock.svg") center / cover no-repeat;
+  border: 3px solid var(--ink); border-radius: 28px; box-shadow: 0 6px 0 var(--bright-edge), var(--shadow-card);
+}
+.crew-dock__fig { position: absolute; left: 50%; bottom: 22%; height: 70%; translate: -50% 0; display: grid; align-items: end; }
+.crew-dock__fig svg { height: 100%; width: auto; }
+.crew-dock__fig.is-hop { animation: crew-hop 520ms var(--ease-pop); }
+@keyframes crew-hop { 0% { transform: translateY(14px) scale(.92); } 55% { transform: translateY(-10px) scale(1.04); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .crew-dock__fig.is-hop { animation: none; } }
+:root.reduce-motion .crew-dock__fig.is-hop { animation: none; }
+.crew-dock__fig.is-empty { bottom: 30%; height: auto; }
+.crew-dock__empty { display: grid; place-items: center; width: 86px; height: 86px; border-radius: 50%; background: var(--white-solid); border: 3px dashed var(--ink); font: var(--fw-black) 48px/1 var(--font-sans); color: var(--ocean-deep); }
+.crew-dock__name { margin: 0; font-size: var(--fs-h2); }
+.crew-dock__look { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }  /* 只給讀屏軟體：顏色與胸章說明 */
+
+.crew-options { grid-column: 1 / -1; display: grid; gap: var(--space-3); padding: var(--space-3); background: var(--surface); border: 2.5px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-soft); }
+.crew-opt { min-width: 0; margin: 0; padding: 0; border: 0; }
+.crew-opt legend { padding: 0; margin-bottom: var(--space-2); font: var(--fw-heavy) var(--fs-body)/1.3 var(--font-sans); color: var(--ink); }
+.crew-opt__row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.crew-chip {
+  position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: var(--tap-size); padding: 4px 14px 4px 10px;
+  font: var(--fw-heavy) var(--fs-btn)/1.2 var(--font-sans); color: var(--ink); cursor: pointer;
+  background: var(--white-solid); border: 2.5px solid var(--line); border-radius: var(--radius-pill); -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.crew-chip__sw { width: 24px; height: 24px; flex: none; border-radius: 50%; background: var(--sw); border: 2.5px solid var(--ink); }
+.crew-chip input:checked ~ .crew-chip__txt { text-decoration: underline; text-decoration-thickness: 3px; text-underline-offset: 4px; }
+@supports selector(:has(*)) { .crew-chip:has(input:checked) { background: var(--sun-gold); border-color: var(--ink); box-shadow: 0 3px 0 var(--gold-edge); } }
+.crew-chip:focus-within { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 3px; box-shadow: 0 0 0 3px var(--focus-halo); }
+@supports selector(:has(*)) { .crew-chip:focus-within:not(:has(:focus-visible)) { outline: none; box-shadow: none; } .crew-chip:has(input:checked):focus-within:not(:has(:focus-visible)) { box-shadow: 0 3px 0 var(--gold-edge); } }
+.crew-opt:disabled .crew-chip { opacity: .55; cursor: not-allowed; border-style: dashed; }
+.crew-opt:disabled legend { color: var(--ink-soft); }
+
+/* 底部列：手機固定在畫面最下面（跟著捲動，不會被切掉），平板／桌機回到內容裡置中 */
+.crew-boardbar {
+  position: sticky; bottom: 0; z-index: var(--layer-hud); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-2) var(--space-3);
+  width: calc(100% + 2 * var(--gutter)); margin: var(--space-4) calc(-1 * var(--gutter)) calc(-1 * var(--space-5));
+  padding: var(--space-3) var(--gutter) calc(var(--space-3) + var(--safe-bottom));
+  background: rgba(255, 249, 232, .97); border-top: 3px solid var(--ink); border-radius: var(--radius-card) var(--radius-card) 0 0; box-shadow: 0 -6px 16px rgba(23, 50, 77, .14);
+}
+.crew-who { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.crew-who svg { flex: none; }
+.crew-who__name { font: var(--fw-heavy) var(--fs-body)/1.2 var(--font-sans); overflow-wrap: anywhere; }
+.crew-go { width: 100%; white-space: normal; }
+.crew-go .ds-icon { width: 1.3em; height: 1.3em; }
+.crew-msg { grid-column: 1 / -1; margin: 0; text-align: center; color: var(--ink); font-size: var(--fs-caption); }
+
+/* 平板（600～999）：3 欄 × 2 列船員卡，下面左邊碼頭預覽、右邊選項 */
+@media (min-width: 600px) {
+  .crew-stage { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+  .crew-card__fig svg { height: 150px; }
+  .crew-dock__head { order: 0; grid-column: 1 / span 1; grid-row: 3; align-content: start; }
+  .crew-options { grid-column: 2 / span 2; grid-row: 3; align-content: start; padding: var(--space-4); }
+  .crew-boardbar { position: static; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 520px; margin: var(--space-5) auto 0; padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; }
+  .crew-who { display: none; }
+  .crew-go { width: auto; min-width: min(100%, 300px); }
+}
+
+/* 桌機（≥1000）：左 3 張、中央碼頭預覽＋選項、右 3 張（2 欄 × 3 列船員卡），不是側邊直排頭像 */
+@media (min-width: 1000px) {
+  .crew-stage { grid-template-columns: minmax(200px, 1fr) minmax(340px, 1.3fr) minmax(200px, 1fr); grid-template-rows: repeat(3, auto); gap: var(--space-4) var(--space-6); align-items: stretch; }
+  .crew-card { grid-template-columns: auto minmax(0, 1fr); align-items: center; justify-items: start; text-align: left; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
+  .crew-card__fig svg { height: 128px; }
+  .crew-card[data-crew="1"], .crew-card[data-crew="2"], .crew-card[data-crew="3"] { grid-column: 1; }
+  .crew-card[data-crew="4"], .crew-card[data-crew="5"], .crew-card[data-crew="6"] { grid-column: 3; }
+  .crew-card[data-crew="1"], .crew-card[data-crew="4"] { grid-row: 1; }
+  .crew-card[data-crew="2"], .crew-card[data-crew="5"] { grid-row: 2; }
+  .crew-card[data-crew="3"], .crew-card[data-crew="6"] { grid-row: 3; }
+  .crew-dock { display: grid; grid-column: 2; grid-row: 1 / span 3; align-content: space-between; gap: var(--space-3); padding: var(--space-4); text-align: center;
+    background-color: var(--surface); background-image: repeating-linear-gradient(0deg, rgba(23, 50, 77, .035) 0 1px, transparent 1px 5px), repeating-linear-gradient(90deg, rgba(23, 50, 77, .035) 0 1px, transparent 1px 5px);
+    border: 2.5px solid var(--ink); border-radius: var(--radius-card); box-shadow: 0 7px 0 var(--wood-edge), var(--shadow-pop); }
+  .crew-dock__head { grid-column: auto; grid-row: auto; gap: var(--space-2); }
+  .crew-dock__scene { width: min(100%, 320px); }
+  .crew-options { grid-column: auto; grid-row: auto; padding: 0; background: none; border: 0; box-shadow: none; text-align: left; }
+}
+@media (min-width: 1000px) and (max-height: 820px) { .crew-card__fig svg { height: 108px; } .en-crew .en-lead { margin-bottom: var(--space-2); } .crew-dock__scene { width: min(100%, 270px); } }
+@media (max-height: 520px) { .crew-boardbar { position: static; margin-bottom: 0; } }
+
+/* ---------- 6. 地圖上方的小頭像（船員半身像；只改頭像外框，地圖其餘部分仍是舊版） ---------- */
+.map-avatar { display: inline-grid; place-items: end center; flex: none; width: 46px; height: 46px; overflow: hidden; border-radius: 50%; background: var(--ocean-pale); border: 2.5px solid var(--ink); }
+.map-avatar .cw, .map-avatar .ds-icon { width: 40px; height: auto; }
+.map-avatar .ds-icon { height: 40px; align-self: center; }

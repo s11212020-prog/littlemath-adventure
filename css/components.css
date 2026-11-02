@@ -1,0 +1,323 @@
+/* ==========================================================================
+   《小小算術家：六島大冒險》共用元件（階段 3）
+   需先載入 tokens.css。所有類別都以 ds- 開頭，不會影響舊畫面。
+   元件清單：AppShell、TopHUD、GameButton、IconButton、IslandMarker、
+   ProgressStars、LighthouseState、BottomSheet / Dialog、LoadingState，
+   另有卡片、名牌、標籤、輸入框。
+   所有可點物件都有 default / hover / focus-visible / pressed / disabled / loading 六種狀態。
+   ========================================================================== */
+
+/* ---------- 0. 共用基礎 ---------- */
+.ds-reset, .ds-reset * { box-sizing: border-box; }
+.ds-sr-only { position: absolute !important; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* 焦點外框：白色光暈＋墨藍 3px 外框，淺色或深色背景上都看得到（至少 3px） */
+.ds-focusable:focus-visible,
+.ds-btn:focus-visible, .ds-iconbtn:focus-visible, .ds-island:focus-visible,
+.ds-input:focus-visible, .ds-chip-btn:focus-visible, .ds-select:focus-visible,
+.ds-dialog:focus-visible, .ds-card--action:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ink);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px var(--focus-halo), var(--ds-shadow, none);
+}
+.is-focus-demo { outline: var(--focus-width) solid var(--focus-ink) !important; outline-offset: 3px; box-shadow: 0 0 0 3px var(--focus-halo), var(--ds-shadow, none) !important; }
+
+@media (forced-colors: active) {
+  .ds-btn, .ds-iconbtn, .ds-island, .ds-input { border: 2px solid ButtonText; }
+  .ds-btn:focus-visible, .ds-iconbtn:focus-visible, .ds-island:focus-visible { outline: 3px solid Highlight; }
+}
+
+/* ---------- 1. 圖示 ---------- */
+.ds-icon { display: inline-block; width: 1.5em; height: 1.5em; flex: none; vertical-align: -.3em; overflow: visible; }
+.ds-icon * { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.ds-icon .c-ink   { fill: var(--ink); }
+.ds-icon .c-coral { fill: var(--coral); }
+.ds-icon .c-sun   { fill: var(--sun-gold); }
+.ds-icon .c-gold  { fill: var(--gold-edge); }
+.ds-icon .c-mint  { fill: var(--mint); }
+.ds-icon .c-sea   { fill: var(--ocean-bright); }
+.ds-icon .c-deep  { fill: var(--ocean-deep); }
+.ds-icon .c-violet{ fill: var(--story-violet); }
+.ds-icon .c-pink  { fill: var(--island-div); }
+.ds-icon .c-surface { fill: var(--surface); }
+.ds-icon .c-white { fill: var(--white); }
+.ds-icon .c-pale  { fill: var(--ocean-pale); }
+.ds-icon .c-wood  { fill: var(--island-sub-2); }
+.ds-icon .c-skin  { fill: var(--skin); }
+.ds-icon .c-line  { fill: var(--line-soft); }
+.ds-icon .ns { fill: none; }
+.ds-icon .c-deep-s  { stroke: var(--ocean-deep); }
+.ds-icon .c-coral-s { stroke: var(--coral); }
+.ds-icon .c-white-s { stroke: var(--white); }
+.ds-icon .c-line-s  { stroke: var(--line); }
+.ds-icon .dash { stroke-dasharray: 3.5 4.5; stroke: var(--line); }
+.ds-icon--missing { background: var(--line-soft); border-radius: 6px; }
+img.ds-icon { object-fit: contain; }
+.ds-icon--lg { width: 2.25em; height: 2.25em; }
+.ds-icon--xl { width: 3.5em; height: 3.5em; }
+
+/* ---------- 2. GameButton ---------- */
+.ds-btn {
+  --btn-face: var(--coral); --btn-hi: var(--coral-hi); --btn-edge: var(--coral-edge); --btn-ink: var(--ink);
+  --ds-shadow: 0 5px 0 var(--btn-edge), 0 10px 16px rgba(23, 50, 77, .18);
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: .5em;
+  min-height: var(--tap-size); min-width: var(--tap-size); padding: .55em 1.3em;
+  font: var(--fw-heavy) var(--fs-btn)/var(--lh-tight) var(--font-sans); color: var(--btn-ink); text-align: center; text-decoration: none; white-space: nowrap;
+  background: linear-gradient(180deg, var(--btn-hi) 0%, var(--btn-face) 58%);
+  border: 2.5px solid var(--ink); border-radius: var(--radius-md);
+  box-shadow: var(--ds-shadow), inset 0 2px 0 rgba(255, 255, 255, .55);
+  cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out), filter var(--dur-fast);
+}
+.ds-btn .ds-icon { width: 1.4em; height: 1.4em; vertical-align: 0; }
+@media (hover: hover) {
+  .ds-btn:hover:not(:disabled):not([aria-disabled="true"]) { transform: translateY(-2px); filter: saturate(1.08) brightness(1.03); --ds-shadow: 0 7px 0 var(--btn-edge), 0 14px 20px rgba(23, 50, 77, .2); }
+}
+.ds-btn:active:not(:disabled):not([aria-disabled="true"]), .ds-btn.is-pressed { transform: translateY(4px); --ds-shadow: 0 1px 0 var(--btn-edge), 0 3px 6px rgba(23, 50, 77, .16); }
+.ds-btn.is-hover { transform: translateY(-2px); filter: saturate(1.08) brightness(1.03); --ds-shadow: 0 7px 0 var(--btn-edge), 0 14px 20px rgba(23, 50, 77, .2); }
+
+/* 顏色變體：每一組「底色＋文字色」都通過 WCAG AA（見 tests/tokens 對比檢查） */
+.ds-btn--coral  { --btn-face: var(--coral);        --btn-hi: var(--coral-hi);   --btn-edge: var(--coral-edge);  --btn-ink: var(--ink); }
+.ds-btn--sea    { --btn-face: var(--ocean-bright); --btn-hi: var(--bright-hi);  --btn-edge: var(--bright-edge); --btn-ink: var(--ink); }
+.ds-btn--deep   { --btn-face: var(--ocean-deep);   --btn-hi: var(--deep-hi);    --btn-edge: var(--deep-edge);   --btn-ink: var(--white); }
+.ds-btn--mint   { --btn-face: var(--mint);         --btn-hi: var(--mint-hi);    --btn-edge: var(--mint-edge);   --btn-ink: var(--ink); }
+.ds-btn--violet { --btn-face: var(--story-violet-strong); --btn-hi: var(--violet-hi); --btn-edge: var(--violet-edge); --btn-ink: var(--white); }
+.ds-btn--gold   { --btn-face: var(--sun-gold);     --btn-hi: var(--gold-hi);    --btn-edge: var(--gold-edge);   --btn-ink: var(--ink); }
+.ds-btn--danger { --btn-face: var(--danger-strong); --btn-hi: var(--danger-hi);          --btn-edge: var(--danger-edge); --btn-ink: var(--white); }
+.ds-btn--ghost  { --btn-face: var(--surface); --btn-hi: var(--white-solid); --btn-edge: var(--surface-edge); --btn-ink: var(--ink); }
+
+.ds-btn--sm { min-height: var(--tap-size); padding: .4em 1em; font-size: max(16px, calc(var(--fs-btn) - 2px)); }
+.ds-btn--lg { min-height: 58px; padding: .7em 1.6em; font-size: calc(var(--fs-btn) + 3px); border-radius: var(--radius-lg); }
+.ds-btn--block { display: flex; width: 100%; }
+
+/* 停用：不只變灰，還改成虛線邊框＋無立體感，並可放鎖頭圖示 */
+.ds-btn:disabled, .ds-btn[aria-disabled="true"]:not(.is-loading), .ds-btn.is-disabled {
+  --btn-face: var(--disabled-face); --btn-hi: var(--disabled-face); --btn-ink: var(--disabled-ink);
+  --ds-shadow: 0 0 0 transparent; border-style: dashed; border-color: var(--line); background: var(--disabled-face);
+  box-shadow: none; transform: none; filter: none; cursor: not-allowed;
+}
+/* 載入中：保留文字、前面出現轉圈，禁止重複點擊 */
+.ds-btn.is-loading, .ds-btn[aria-busy="true"] { pointer-events: none; cursor: progress; }
+.ds-btn.is-loading:not(:disabled) { --ds-shadow: 0 3px 0 var(--btn-edge); transform: translateY(2px); }
+
+.ds-spinner {
+  display: inline-block; width: 1.15em; height: 1.15em; flex: none; border-radius: 50%;
+  border: 3px solid rgba(23, 50, 77, .22); border-top-color: var(--ink);
+  animation: ds-spin 900ms linear infinite;
+}
+.ds-btn--deep .ds-spinner, .ds-btn--violet .ds-spinner, .ds-btn--danger .ds-spinner { border-color: rgba(255, 255, 255, .35); border-top-color: var(--white); }
+@keyframes ds-spin { to { transform: rotate(360deg); } }
+
+/* ---------- 3. IconButton（圖示＋文字，低年級不用猜符號） ---------- */
+.ds-iconbtn {
+  --ds-shadow: 0 4px 0 var(--surface-edge), 0 8px 14px rgba(23, 50, 77, .14);
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-width: var(--tap-size); min-height: var(--tap-size); padding: 6px 10px;
+  font: var(--fw-heavy) 15px/1.15 var(--font-sans); color: var(--ink);
+  background: linear-gradient(180deg, var(--white-solid) 0, var(--surface) 70%);
+  border: 2.5px solid var(--ink); border-radius: var(--radius-md); box-shadow: var(--ds-shadow);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+.ds-iconbtn .ds-icon { width: 28px; height: 28px; }
+.ds-iconbtn--row { flex-direction: row; gap: 8px; padding: 6px 14px; font-size: 16px; }
+.ds-iconbtn--round { border-radius: 50%; padding: 0; width: var(--tap-size); height: var(--tap-size); }
+@media (hover: hover) { .ds-iconbtn:hover:not(:disabled) { transform: translateY(-2px); --ds-shadow: 0 6px 0 var(--surface-edge), 0 12px 18px rgba(23, 50, 77, .18); } }
+.ds-iconbtn:active:not(:disabled), .ds-iconbtn.is-pressed { transform: translateY(3px); --ds-shadow: 0 1px 0 var(--surface-edge); }
+.ds-iconbtn.is-hover { transform: translateY(-2px); --ds-shadow: 0 6px 0 var(--surface-edge), 0 12px 18px rgba(23, 50, 77, .18); }
+.ds-iconbtn:disabled, .ds-iconbtn[aria-disabled="true"] { background: var(--disabled-face); color: var(--disabled-ink); border-style: dashed; border-color: var(--line); --ds-shadow: none; cursor: not-allowed; }
+.ds-iconbtn:disabled .ds-icon, .ds-iconbtn[aria-disabled="true"] .ds-icon { opacity: .55; filter: grayscale(.6); }
+.ds-iconbtn.is-loading { pointer-events: none; cursor: progress; }
+
+/* ---------- 4. 卡片、名牌（木板）、標籤 ---------- */
+.ds-card {
+  --ds-shadow: var(--shadow-card);
+  background: var(--surface); border: 2.5px solid var(--line); border-radius: var(--radius-card);
+  padding: var(--space-5); box-shadow: var(--shadow-card); color: var(--ink);
+}
+.ds-card--water { background: var(--ocean-pale); border-color: var(--ocean-deep); }
+.ds-card--canvas { /* 帆布紋：極淡的縱橫細線 */
+  background-color: var(--surface);
+  background-image: repeating-linear-gradient(0deg, rgba(23, 50, 77, .035) 0 1px, transparent 1px 5px), repeating-linear-gradient(90deg, rgba(23, 50, 77, .035) 0 1px, transparent 1px 5px);
+}
+.ds-card--action { cursor: pointer; transition: transform var(--dur-fast) var(--ease-out); }
+@media (hover: hover) { .ds-card--action:hover { transform: translateY(-3px); } }
+.ds-card__title { margin: 0 0 var(--space-2); font: var(--fw-heavy) var(--fs-h3)/var(--lh-tight) var(--font-sans); }
+
+/* 木板名牌：島名、章節標題用，文字永遠放在獨立高對比底上 */
+.ds-plank {
+  display: inline-flex; align-items: center; gap: .45em; padding: .3em 1em .38em;
+  font: var(--fw-black) var(--fs-h3)/var(--lh-tight) var(--font-sans); color: var(--ink);
+  background: linear-gradient(180deg, var(--wood-hi) 0%, var(--wood-lo) 100%);
+  border: 2.5px solid var(--ink); border-radius: var(--radius-sm);
+  box-shadow: 0 4px 0 var(--wood-edge), inset 0 2px 0 rgba(255, 255, 255, .45), inset 0 -6px 0 rgba(168, 112, 63, .18);
+  position: relative;
+}
+.ds-plank::before, .ds-plank::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--wood-nail); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); position: absolute; top: 50%; translate: 0 -50%; }
+.ds-plank::before { left: 7px; } .ds-plank::after { right: 7px; }
+.ds-plank { padding-inline: 1.5em; }
+
+.ds-chip {
+  display: inline-flex; align-items: center; gap: .4em; padding: .2em .8em; min-height: 32px;
+  font: var(--fw-heavy) var(--fs-caption)/1.2 var(--font-sans);
+  color: var(--chip-ink, var(--ink)); background: var(--chip-bg, var(--surface)); border: 2px solid var(--chip-line, var(--line)); border-radius: var(--radius-pill);
+}
+.ds-chip .ds-icon { width: 1.3em; height: 1.3em; vertical-align: 0; }
+.ds-chip--success { --chip-bg: var(--state-success-bg); --chip-ink: var(--state-success-ink); --chip-line: var(--mint-strong); }
+.ds-chip--info    { --chip-bg: var(--state-info-bg);    --chip-ink: var(--state-info-ink);    --chip-line: var(--ocean-deep); }
+.ds-chip--warn    { --chip-bg: var(--state-warn-bg);    --chip-ink: var(--state-warn-ink);    --chip-line: var(--gold-strong); }
+.ds-chip--danger  { --chip-bg: var(--state-danger-bg);  --chip-ink: var(--state-danger-ink);  --chip-line: var(--danger-strong); }
+.ds-chip-btn { cursor: pointer; min-height: var(--tap-size); padding-inline: 1.1em; font-size: var(--fs-btn); }
+
+/* ---------- 5. 輸入框 ---------- */
+.ds-field { display: grid; gap: var(--space-2); }
+.ds-label { font: var(--fw-heavy) var(--fs-body)/1.3 var(--font-sans); color: var(--ink); }
+.ds-hint  { font: var(--fw-medium) var(--fs-caption)/1.4 var(--font-sans); color: var(--ink-soft); }
+.ds-input {
+  width: 100%; min-height: var(--tap-size); padding: .55em .9em;
+  font: var(--fw-bold) var(--fs-body)/1.3 var(--font-sans); color: var(--ink);
+  background: var(--white-solid); border: 2.5px solid var(--line); border-radius: var(--radius-sm);
+  box-shadow: inset 0 2px 0 rgba(23, 50, 77, .06);
+}
+.ds-input::placeholder { color: var(--ink-soft); opacity: .85; font-weight: var(--fw-medium); }
+.ds-input[aria-invalid="true"] { border-color: var(--danger-strong); background: var(--state-danger-bg); }
+.ds-error { display: flex; align-items: center; gap: .4em; font: var(--fw-heavy) var(--fs-caption)/1.4 var(--font-sans); color: var(--state-danger-ink); }
+.ds-error .ds-icon { width: 1.3em; height: 1.3em; vertical-align: 0; }
+
+/* ---------- 6. AppShell 與 TopHUD ---------- */
+.ds-shell {
+  position: relative; isolation: isolate; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--ocean-pale) 38%, var(--sky-bottom) 100%); color: var(--ink);
+}
+.ds-shell__bg { position: absolute; inset: 0; z-index: var(--layer-bg); pointer-events: none; }
+.ds-shell__main { position: relative; z-index: var(--layer-map); flex: 1; width: 100%; max-width: 1240px; margin: 0 auto; padding: var(--space-4) var(--gutter) var(--space-7); }
+
+.ds-hud {
+  position: relative; z-index: var(--layer-hud); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-3) var(--gutter);
+}
+.ds-hud__group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.ds-hud__pill {
+  display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--tap-size); padding: 4px 16px 4px 10px;
+  background: var(--surface); border: 2.5px solid var(--ink); border-radius: var(--radius-pill); box-shadow: var(--shadow-hud);
+  font: var(--fw-heavy) var(--fs-body)/1.1 var(--font-sans); color: var(--ink);
+}
+.ds-hud__pill .ds-icon { width: 32px; height: 32px; vertical-align: 0; }
+.ds-hud__pill small { display: block; font-size: var(--fs-caption); font-weight: var(--fw-bold); color: var(--ink-soft); }
+.ds-hud--bar { background: var(--ocean-deep); color: var(--white-solid); border-bottom: 4px solid var(--deep-edge); }
+
+/* ---------- 7. ProgressStars ---------- */
+.ds-stars { display: inline-flex; align-items: center; gap: 2px; }
+.ds-stars__star { width: 1.5em; height: 1.5em; vertical-align: 0; }
+.ds-stars__star.is-on { filter: drop-shadow(0 2px 0 rgba(201, 150, 31, .55)); }
+.ds-stars--nine { flex-wrap: wrap; max-width: 15em; } /* 九星 3×3 */
+@keyframes ds-star-pop { 0% { transform: scale(.4) rotate(-20deg); } 70% { transform: scale(1.25) rotate(6deg); } 100% { transform: scale(1) rotate(0); } }
+.ds-stars__star.is-new { animation: ds-star-pop var(--dur-feedback) var(--ease-pop) both; }
+
+/* ---------- 8. LighthouseState ---------- */
+.ds-lh { width: 88px; height: 138px; overflow: visible; }
+.ds-lh * { stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; }
+.ds-lh__rock { fill: var(--rock); }
+.ds-lh__tower { fill: var(--surface); }
+.ds-lh__band { fill: var(--coral); }
+.ds-lh__room { fill: var(--ocean-deep); }
+.ds-lh__roof { fill: var(--coral); }
+.ds-lh__crown { fill: var(--sun-gold); stroke-width: 1.8; }
+.ds-lh__win { fill: var(--night-window); }                        /* 未亮：深色窗，輪廓仍清楚 */
+.ds-lh__win.is-lit { fill: var(--sun-gold); filter: drop-shadow(0 0 4px rgba(255, 209, 102, .95)); }
+.ds-lh__lamp { fill: var(--night-window); }
+.ds-lh__lamp.is-lit { fill: var(--sun-gold); filter: drop-shadow(0 0 6px rgba(255, 209, 102, 1)); }
+.ds-lh__beam { fill: rgba(255, 226, 140, .55); stroke: none !important; opacity: 0; transform-origin: 32px 30px; }
+.ds-lh__beam.is-on { opacity: 1; animation: ds-beam 10s linear infinite; }
+@keyframes ds-beam { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(.55); } }
+:root.reduce-motion .ds-lh__beam.is-on, :root.reduce-motion .ds-spinner { animation: none; }
+:root.reduce-motion .ds-lh__beam.is-on { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .ds-lh__beam.is-on, .ds-spinner { animation: none; } .ds-lh__beam.is-on { opacity: .6; } }
+.ds-lh-wrap { display: inline-flex; flex-direction: column; align-items: center; gap: 4px; font: var(--fw-heavy) var(--fs-caption)/1 var(--font-sans); color: var(--ink); }
+
+/* ---------- 9. IslandMarker：只接收 data-state（locked / open / current / done / perfect）---------- */
+.ds-island {
+  --isl: var(--island-add); --isl-2: var(--island-add-2);
+  --ds-shadow: 0 0 0 transparent;
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
+  min-width: 140px; min-height: var(--tap-size); padding: var(--space-3) var(--space-3) var(--space-3);
+  font: var(--fw-heavy) var(--fs-body)/1.2 var(--font-sans); color: var(--ink); text-align: center;
+  background: transparent; border: 0; border-radius: var(--radius-card); cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.ds-island[data-island="add"] { --isl: var(--island-add); --isl-2: var(--island-add-2); }
+.ds-island[data-island="sub"] { --isl: var(--island-sub); --isl-2: var(--island-sub-2); }
+.ds-island[data-island="mul"] { --isl: var(--island-mul); --isl-2: var(--island-mul-2); }
+.ds-island[data-island="div"] { --isl: var(--island-div); --isl-2: var(--island-div-2); }
+.ds-island[data-island="wp"]  { --isl: var(--island-wp);  --isl-2: var(--island-wp-2); }
+.ds-island[data-island="mix"] { --isl: var(--island-mix); --isl-2: var(--island-mix-2); }
+@media (hover: hover) { .ds-island:hover { transform: translateY(-4px) scale(1.02); } }
+.ds-island:active { transform: translateY(2px) scale(.99); }
+/* 插圖插槽：階段 5 換成真正的島嶼插圖（<img> 或 SVG），放進 .ds-island__art 即可 */
+.ds-island__art {
+  position: relative; display: grid; place-items: center; width: 132px; height: 96px;
+  background: var(--isl);
+  background: radial-gradient(ellipse at 35% 30%, color-mix(in srgb, var(--isl) 55%, white) 0, var(--isl) 55%, color-mix(in srgb, var(--isl) 70%, black) 100%);
+  border: 2.5px solid var(--ink); border-radius: 52% 48% 55% 45% / 62% 58% 42% 38%;
+  box-shadow: 0 10px 0 var(--ink), 0 18px 22px rgba(23, 50, 77, .22);
+  box-shadow: 0 10px 0 color-mix(in srgb, var(--isl) 55%, var(--ink)), 0 18px 22px rgba(23, 50, 77, .22), inset -8px -10px 18px rgba(23, 50, 77, .12);
+}
+.ds-island__art .ds-icon { width: 56px; height: 56px; filter: drop-shadow(0 3px 0 rgba(23, 50, 77, .25)); }
+.ds-island__plate {
+  display: inline-block; max-width: 100%; padding: .2em .9em .26em; font: var(--fw-black) var(--fs-h3)/1.2 var(--font-sans);
+  color: var(--ink); background: var(--surface); border: 2.5px solid var(--ink); border-radius: var(--radius-sm); box-shadow: 0 4px 0 var(--surface-edge);
+}
+.ds-island__meta { display: flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 28px; font-size: var(--fs-caption); }
+.ds-island__state { display: inline-flex; align-items: center; gap: .3em; padding: .1em .7em; font-size: var(--fs-caption); font-weight: var(--fw-heavy); background: var(--white); border: 2px solid var(--line); border-radius: var(--radius-pill); }
+.ds-island__state .ds-icon { width: 1.25em; height: 1.25em; vertical-align: 0; }
+.ds-island[data-state="current"] .ds-island__art { box-shadow: 0 10px 0 color-mix(in srgb, var(--isl) 55%, var(--ink)), 0 0 0 6px rgba(255, 209, 102, .9), 0 18px 22px rgba(23, 50, 77, .22), inset -8px -10px 18px rgba(23, 50, 77, .12); }
+.ds-island[data-state="done"] .ds-island__art, .ds-island[data-state="perfect"] .ds-island__art { box-shadow: 0 10px 0 color-mix(in srgb, var(--isl) 55%, var(--ink)), 0 0 26px 8px rgba(255, 209, 102, .75), inset -8px -10px 18px rgba(23, 50, 77, .12); }
+/* 鎖定：不做灰階懲罰，島色保留；用雲霧＋鎖頭＋文字說明 */
+.ds-island[data-state="locked"] .ds-island__art { filter: saturate(.85); }
+.ds-island[data-state="locked"] .ds-island__art::before { content: ""; position: absolute; inset: -8px -16px; border-radius: 50%; background: radial-gradient(ellipse, rgba(255, 255, 255, .5) 0, rgba(255, 255, 255, .38) 50%, rgba(255, 255, 255, 0) 72%); pointer-events: none; }
+.ds-island[data-state="locked"] .ds-island__art .ds-icon { position: relative; }
+.ds-island.is-hover { transform: translateY(-4px) scale(1.02); }
+
+/* ---------- 10. Dialog / BottomSheet ---------- */
+.ds-overlay[hidden] { display: none !important; }
+.ds-overlay {
+  position: fixed; inset: 0; z-index: var(--layer-dialog); display: flex; align-items: center; justify-content: center;
+  padding: max(var(--gutter), var(--safe-top)) max(var(--gutter), var(--safe-right)) max(var(--gutter), var(--safe-bottom)) max(var(--gutter), var(--safe-left));
+  background: rgba(11, 48, 77, .55); overscroll-behavior: contain;
+}
+.ds-dialog {
+  --ds-shadow: var(--shadow-pop);
+  width: min(560px, 100%); max-height: calc(100dvh - 2 * var(--gutter) - var(--safe-top) - var(--safe-bottom)); overflow: auto;
+  background: var(--surface); color: var(--ink); border: 3px solid var(--ink); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop);
+  padding: var(--space-6);
+}
+.ds-dialog__title { margin: 0 0 var(--space-3); font: var(--fw-black) var(--fs-h2)/var(--lh-tight) var(--font-sans); }
+.ds-dialog__body { font: var(--fw-medium) var(--fs-body)/var(--lh-body) var(--font-sans); }
+.ds-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); }
+.ds-overlay.is-open .ds-dialog { animation: ds-pop var(--dur-slow) var(--ease-pop) both; }
+@keyframes ds-pop { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: none; } }
+
+/* 手機版 BottomSheet：從底部升起，頂部有拖曳握把（只是外觀，關閉仍用按鈕與 Esc） */
+.ds-overlay--sheet { align-items: flex-end; padding-bottom: 0; }
+.ds-overlay--sheet .ds-dialog { width: min(720px, 100%); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding-bottom: calc(var(--space-6) + var(--safe-bottom)); border-bottom-width: 0; }
+.ds-overlay--sheet .ds-dialog::before { content: ""; display: block; width: 56px; height: 6px; margin: -8px auto 14px; border-radius: 3px; background: var(--line-soft); }
+.ds-overlay--sheet.is-open .ds-dialog { animation: ds-sheet var(--dur-slow) var(--ease-out) both; }
+@keyframes ds-sheet { from { transform: translateY(100%); } to { transform: none; } }
+@media (max-width: 599px) { .ds-overlay--auto { align-items: flex-end; padding-bottom: 0; } .ds-overlay--auto .ds-dialog { border-radius: var(--radius-lg) var(--radius-lg) 0 0; border-bottom-width: 0; } }
+
+/* ---------- 11. LoadingState ---------- */
+.ds-loading { display: grid; justify-items: center; gap: var(--space-3); padding: var(--space-7) var(--space-5); text-align: center; color: var(--ink); font: var(--fw-heavy) var(--fs-body)/1.4 var(--font-sans); }
+.ds-loading--cover { position: fixed; inset: 0; z-index: var(--layer-loading); align-content: center; background: rgba(217, 247, 245, .94); }
+.ds-buoy { position: relative; width: 68px; height: 68px; border-radius: 50%; border: 3px solid var(--ink); animation: ds-bob 1.6s ease-in-out infinite;
+  background: conic-gradient(var(--coral) 0 25%, var(--white-solid) 0 50%, var(--coral) 0 75%, var(--white-solid) 0); box-shadow: 0 6px 0 rgba(23, 50, 77, .18); }
+.ds-buoy::after { content: ""; position: absolute; inset: 17px; border-radius: 50%; border: 3px solid var(--ink); background: var(--ocean-bright); }
+@keyframes ds-bob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+:root.reduce-motion .ds-buoy { animation: none; }
+@media (prefers-reduced-motion: reduce) { .ds-buoy { animation: none; } }
+.ds-skeleton { display: block; height: 1em; border-radius: var(--radius-xs); background: linear-gradient(90deg, var(--skeleton-a) 0, var(--skeleton-b) 50%, var(--skeleton-a) 100%); background-size: 200% 100%; animation: ds-shimmer 1.4s linear infinite; }
+@keyframes ds-shimmer { to { background-position: -200% 0; } }
+:root.reduce-motion .ds-skeleton { animation: none; }
+@media (prefers-reduced-motion: reduce) { .ds-skeleton { animation: none; } }
+/* 載入失敗：保留目前進度，顯示重試與返回 */
+.ds-failed { display: grid; justify-items: center; gap: var(--space-3); text-align: center; }

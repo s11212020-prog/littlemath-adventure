@@ -1,0 +1,29 @@
+/* ==========================================================================
+   階段 9E-2：海圖上的「船員小屋」入口（css/cabin-entry.css）
+   原則：入口不能讓手機的海圖和「進入島嶼」變小，也不能讓頂部按鈕列一直增加列數。
+   * 平板／桌機（寬度 ≥ 600）：入口是頂部按鈕列最後面多一顆；600～1359 寬用簡稱「小屋」，避免多出一排。
+   * 手機（寬度 ≤ 599）：頂部按鈕列完全不加按鈕；入口放在下方面板，和「進入島嶼」同一排（不新增一排）。
+   * 入口預設隱藏（hidden）。功能沒開放（FEATURE_OFF）、示範／離線、尚未讀到之前都維持隱藏，海圖和 9E-1 完全相同；
+     只有確認功能存在（讀取成功，或暫時讀不到）才顯示，由 js/cabin.js 切換。
+   * 本檔只加規則，不改 css/map.css 的任何規則。
+   ========================================================================== */
+.sm-cabin__short { display: none; }
+#btn-cabin-panel { display: none; }
+
+/* 手機：頂部不加按鈕；下方面板的入口和「進入島嶼」同一排 */
+@media (max-width: 599px) {
+  #btn-cabin-top { display: none !important; }
+  #sm-panel.has-cabin { grid-template-columns: minmax(0, 1fr) auto; }
+  #sm-panel.has-cabin > .sm-mini, #sm-panel.has-cabin > .sm-panel__info { grid-column: 1 / -1; }
+  #sm-panel.has-cabin > #sm-enter { grid-column: 1; }
+  #sm-panel.has-cabin > #btn-cabin-panel { display: inline-flex; grid-column: 2; justify-self: stretch; padding-inline: var(--space-3); }
+}
+
+/* 平板／桌機 600～1359：簡稱 */
+@media (min-width: 600px) and (max-width: 1359px) {
+  #btn-cabin-top .sm-cabin__full { display: none; }
+  #btn-cabin-top .sm-cabin__short { display: inline; }
+}
+
+/* 小船上的裝備層不接收點擊（點小船仍然進入島嶼）；救生圈／船首像是畫在船身 SVG 裡的 */
+.sm-boat .rw-over { pointer-events: none; }

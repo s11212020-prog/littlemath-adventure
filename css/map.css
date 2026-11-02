@@ -1,0 +1,336 @@
+/* ==========================================================================
+   《小小算術家：六島大冒險》階段 5：海上六島地圖
+   - 桌機（≥1024）：六座島一次全部看見
+   - 平板（600～1023）：長海圖，手指／滑鼠拖曳，同時約三座島
+   - 手機（≤599）：左右滑動的長海圖，scroll-snap 讓島停在畫面中央，一次約 1～1.3 座島
+   所有裝飾層（天空、雲、浪、航線、小船）一律 pointer-events: none，只有島嶼按鈕與面板按鈕可以點。
+   z-index 只使用 tokens.css 的 --layer-* 變數。
+   ========================================================================== */
+
+/* ---------- 0. 版面骨架 ---------- */
+.sm-screen { justify-content: flex-start; background: var(--sky-top); }
+.sm-screen > * { width: 100%; }
+
+/* ---------- 1. 上方狀態列 ---------- */
+.sm-hud {
+  position: relative; z-index: var(--layer-hud); flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3);
+  padding: calc(var(--space-3) + var(--safe-top)) calc(var(--gutter) + var(--safe-right)) var(--space-2) calc(var(--gutter) + var(--safe-left));
+  background: linear-gradient(180deg, rgba(23, 50, 77, .22), transparent);
+}
+.sm-hud .app-logo { margin: 0; flex: 0 1 auto; font-size: max(14px, .9rem); }
+.sm-hud__pills, .sm-hud__btns { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.sm-pill { padding-block: 3px; min-height: var(--tap-size); }
+.sm-pill__txt { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.sm-pill__main { font: var(--fw-black) var(--fs-btn)/1.1 var(--font-sans); color: var(--ink); overflow-wrap: anywhere; }
+.sm-pill .status-title-text, .sm-pill .status-progress-text { font: var(--fw-bold) var(--fs-caption)/1.2 var(--font-sans); color: var(--ink-soft); }
+.sm-pill .ds-icon { width: 34px; height: 34px; }
+
+/* ---------- 2. 海面區：天空＋海＋長海圖 ---------- */
+.sm-sea { position: relative; z-index: var(--layer-map); flex: 1 0 auto; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+.sm-sea__bg {
+  position: absolute; inset: 0; z-index: var(--layer-bg); pointer-events: none;
+  background: linear-gradient(180deg, var(--sky-top) 0%, #D6F1FB 30%, var(--ocean-pale) 38%, var(--ocean-bright) 39%, #14AFD0 64%, var(--ocean-deep) 100%);
+}
+.sm-sun {
+  position: absolute; top: 5%; right: 6%; width: clamp(48px, 7vw, 92px); aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, #FFEFB8 0 52%, var(--sun-gold) 53% 100%);
+  box-shadow: 0 0 0 clamp(6px, 1vw, 12px) rgba(255, 209, 102, .28), 0 0 40px rgba(255, 209, 102, .5);
+}
+
+.sm-scroller {
+  position: relative; z-index: var(--layer-map); flex: 1 0 auto; display: flex; width: 100%;
+  overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory; scrollbar-width: none; touch-action: pan-x pan-y;
+}
+.sm-scroller::-webkit-scrollbar { display: none; }
+.sm-scroller.is-dragging { scroll-snap-type: none; cursor: grabbing; user-select: none; -webkit-user-select: none; }
+.sm-scroller:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: -6px; }
+
+/* 世界 = 一張長海圖。桌機剛好一個畫面寬；平板 8/3 個畫面寬（6 座島＋兩端各一格空海）；手機 4.5 個畫面寬 */
+.sm-world { --world-w: 100%; --pad-w: 0%; --stop-w: calc(100% / 6); position: relative; flex: 0 0 var(--world-w); display: flex; min-height: 100%; }
+/* 平板：第一座島靠左（左邊留 28px 安全邊距）、最後一座靠右，一個畫面剛好放三座島；中間的島用 center 吸附。
+   一座島寬 = (畫面寬 − 左右各 28px) ÷ 3，世界寬 = 六座島 + 兩端邊距 = 2 個畫面寬 − 56px。 */
+@media (min-width: 600px) and (max-width: 1023px) {
+  .sm-scroller { container-type: inline-size; scroll-padding-inline: 28px; }
+  .sm-world { --edge: 28px; --world-w: calc(200cqw - 2 * var(--edge)); --pad-w: var(--edge); --stop-w: calc((100cqw - 2 * var(--edge)) / 3); }
+  .sm-stop:first-child { scroll-snap-align: start; }
+  .sm-stop:last-child { scroll-snap-align: end; }
+}
+@media (max-width: 599px) { .sm-world { --world-w: 450%; --pad-w: calc(100% / 30); --stop-w: calc(100% * 7 / 45); } }
+
+.sm-deco, .sm-route { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.sm-deco { overflow: hidden; z-index: var(--layer-bg); }
+.sm-route { z-index: calc(var(--layer-bg) + 1); overflow: visible; }
+
+/* 雲：只在原地輕輕飄動（短距離），不影響按鈕 */
+.sm-cloud { position: absolute; width: clamp(80px, 9vw, 150px); height: clamp(22px, 2.6vw, 38px); border-radius: 999px; background: #fff; opacity: .92; animation: sm-drift 18s ease-in-out infinite alternate; }
+.sm-cloud::before, .sm-cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+.sm-cloud::before { width: 46%; aspect-ratio: 1; left: 14%; top: -52%; }
+.sm-cloud::after  { width: 34%; aspect-ratio: 1; left: 50%; top: -34%; }
+.sm-cloud--1 { top: 8%;  left: 4%; }
+.sm-cloud--2 { top: 20%; left: 24%; animation-duration: 24s; opacity: .8; }
+.sm-cloud--3 { top: 6%;  left: 46%; animation-duration: 21s; opacity: .85; transform: scale(.8); }
+.sm-cloud--4 { top: 19%; left: 66%; animation-duration: 27s; opacity: .75; }
+.sm-cloud--5 { top: 9%;  left: 86%; animation-duration: 19s; }
+@keyframes sm-drift { from { translate: -18px 0; } to { translate: 22px 0; } }
+/* 浪：兩層海浪紋路，慢慢左右移動 */
+.sm-waves { position: absolute; left: 0; right: 0; bottom: 0; height: 56%; opacity: .95; animation: sm-wave 14s linear infinite;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 24' preserveAspectRatio='none'%3E%3Cpath d='M0 12Q15 0 30 12T60 12T90 12T120 12V24H0Z' fill='%23ffffff' fill-opacity='.22'/%3E%3C/svg%3E") repeat-x 0 18% / 120px 22px,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 24' preserveAspectRatio='none'%3E%3Cpath d='M0 12Q15 0 30 12T60 12T90 12T120 12V24H0Z' fill='%23ffffff' fill-opacity='.16'/%3E%3C/svg%3E") repeat-x 40px 52% / 120px 22px,
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 24' preserveAspectRatio='none'%3E%3Cpath d='M0 12Q15 0 30 12T60 12T90 12T120 12V24H0Z' fill='%230B6FA4' fill-opacity='.2'/%3E%3C/svg%3E") repeat-x 20px 86% / 120px 22px; }
+@keyframes sm-wave { from { background-position: 0 18%, 40px 52%, 20px 86%; } to { background-position: 120px 18%, -80px 52%, 140px 86%; } }
+
+/* 航線（JS 依島嶼位置畫出）：已完成的航段是實線金色＋亮燈，其餘是白色虛線 */
+.sm-route__seg { fill: none; stroke: rgba(255, 255, 255, .92); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 2 11; }
+.sm-route__seg.is-done { stroke: var(--sun-gold); stroke-width: 6; stroke-dasharray: none; filter: drop-shadow(0 0 4px rgba(255, 209, 102, .9)); }
+.sm-route__lamp { fill: #fff; stroke: var(--ink); stroke-width: 2.5; }
+.sm-route__lamp.is-done { fill: var(--sun-gold); }
+
+/* ---------- 3. 六座島 ---------- */
+.sm-islands { position: relative; z-index: var(--layer-map); flex: 1 1 auto; display: flex; align-items: center; margin: 0; padding: clamp(64px, 17vh, 170px) 0 clamp(28px, 5vh, 52px); list-style: none; min-width: 0; }
+.sm-islands::before, .sm-islands::after { content: ""; flex: 0 0 var(--pad-w); }
+.sm-stop {
+  --dy: 0px; position: relative; flex: 0 0 var(--stop-w); min-width: 0; margin-top: var(--dy);
+  display: flex; justify-content: center; scroll-snap-align: center; scroll-snap-stop: always;
+}
+.sm-stop:nth-child(1) { --dy: clamp(0px, 3vh, 28px); }
+.sm-stop:nth-child(2) { --dy: clamp(-26px, -3vh, 0px); }
+.sm-stop:nth-child(3) { --dy: clamp(0px, 4vh, 36px); }
+.sm-stop:nth-child(4) { --dy: clamp(-18px, -2vh, 0px); }
+.sm-stop:nth-child(5) { --dy: clamp(0px, 4vh, 34px); }
+.sm-stop:nth-child(6) { --dy: clamp(-24px, -3vh, 0px); }
+
+.sm-island {
+  --isl: var(--island-add); --isl-2: var(--island-add-2);
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; max-width: 330px; min-height: var(--tap-size);
+  margin: 0; padding: 10px 6px 6px; font: inherit; color: var(--ink); text-align: center; cursor: pointer;
+  background: transparent; border: 0; border-radius: var(--radius-card); -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+.sm-island * { pointer-events: none; } /* 點到任何地方都算點到這顆按鈕 */
+.sm-island[data-island="add"] { --isl: var(--island-add); --isl-2: var(--island-add-2); }
+.sm-island[data-island="sub"] { --isl: var(--island-sub); --isl-2: var(--island-sub-2); }
+.sm-island[data-island="mul"] { --isl: var(--island-mul); --isl-2: var(--island-mul-2); }
+.sm-island[data-island="div"] { --isl: var(--island-div); --isl-2: var(--island-div-2); }
+.sm-island[data-island="wp"]  { --isl: var(--island-wp);  --isl-2: var(--island-wp-2); }
+.sm-island[data-island="mix"] { --isl: var(--island-mix); --isl-2: var(--island-mix-2); }
+@media (hover: hover) { .sm-island:hover { transform: translateY(-5px); } }
+.sm-island:active { transform: translateY(2px); }
+.sm-island:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 2px; box-shadow: 0 0 0 6px var(--focus-halo); background: rgba(255, 255, 255, .22); }
+
+/* 島＋燈塔 */
+.sm-island__scene { position: relative; display: flex; align-items: flex-end; width: 100%; }
+.sm-island__art { position: relative; flex: 0 0 77%; display: block; aspect-ratio: 240 / 170; }
+.sm-island__art svg, .sm-island__art img { display: block; width: 100%; height: 100%; overflow: visible; }
+.sm-island__lh { flex: 0 0 24%; margin-left: -1%; display: block; align-self: flex-end; margin-bottom: 7%; }
+.sm-island__lh svg { display: block; width: 100%; height: auto; overflow: visible; }
+.sm-island__lh .ds-lh { width: 100%; height: auto; }
+.sm-island__ring { position: absolute; left: 4%; right: 2%; bottom: 2%; height: 22%; border: 4px solid var(--sun-gold); border-radius: 50%; box-shadow: 0 0 0 3px var(--ink), inset 0 0 0 3px var(--ink); opacity: 0; transform: scale(.9); transition: opacity var(--dur-base), transform var(--dur-base); }
+
+/* 名牌（木牌） */
+.sm-island__plank {
+  display: inline-block; max-width: 100%; padding: 3px 16px 4px; font: var(--fw-black) var(--fs-h3)/1.2 var(--font-sans); letter-spacing: .04em; color: var(--ink);
+  background: linear-gradient(180deg, var(--wood-hi), var(--wood-lo)); border: 2.5px solid var(--ink); border-radius: var(--radius-sm); box-shadow: 0 3px 0 var(--wood-edge);
+}
+/* 較長的島名（應用題島、四則運算島）：名牌寬度不夠時，字級與左右留白跟著島的寬度縮小，維持一行 */
+.sm-stop { container-type: inline-size; }
+.sm-island__plank--long { white-space: nowrap; font-size: min(var(--fs-h3), 12cqw); padding-inline: clamp(6px, 4cqw, 16px); letter-spacing: .02em; }
+/* 狀態 + 星數 + 燈塔數 */
+.sm-island__meta { display: flex; flex-direction: column; align-items: center; gap: 4px; font: var(--fw-heavy) var(--fs-caption)/1.2 var(--font-sans); }
+.sm-island__stats { display: flex; justify-content: center; gap: 6px; }
+.sm-chip {
+  display: inline-flex; align-items: center; gap: 4px; padding: 1px 10px 1px 6px; min-height: 26px; font: var(--fw-heavy) var(--fs-caption)/1.2 var(--font-sans); color: var(--ink);
+  background: #fff; border: 2px solid var(--ink); border-radius: var(--radius-pill); white-space: nowrap;
+}
+.sm-chip .ds-icon { width: 20px; height: 20px; vertical-align: 0; }
+.sm-chip--done { background: #E3F7EC; color: var(--mint-strong); border-color: var(--mint-strong); }
+.sm-chip--progress { background: #FFF1CC; color: var(--gold-strong); border-color: var(--gold-strong); }
+.sm-chip--new { background: #fff; color: var(--ink-soft); border: 2px dashed var(--line); }
+.sm-chip--here { background: var(--ink); color: #fff; border-color: var(--ink); }
+.sm-chip--here .ds-icon { filter: drop-shadow(0 0 0 #fff); }
+.sm-stat { display: inline-flex; align-items: center; gap: 3px; padding: 1px 8px 1px 5px; background: rgba(255, 255, 255, .94); border: 2px solid var(--line-soft); border-radius: var(--radius-pill); color: var(--ink); white-space: nowrap; }
+.sm-stat .ds-icon { width: 20px; height: 20px; vertical-align: 0; }
+.sm-stat small { font: inherit; color: var(--ink-soft); }
+.lh-count { font-weight: var(--fw-black); }
+
+/* 「你在這裡」旗子（只有目前停靠的島才出現） */
+.sm-flag {
+  position: absolute; z-index: var(--layer-art); top: -8px; left: 50%; display: none; align-items: center; gap: 4px; padding: 2px 12px 2px 8px; transform: translateX(-50%);
+  font: var(--fw-black) var(--fs-caption)/1.2 var(--font-sans); color: #fff; background: var(--ink); border: 2px solid #fff; border-radius: var(--radius-pill); box-shadow: 0 3px 0 rgba(23, 50, 77, .35); white-space: nowrap;
+}
+.sm-flag .ds-icon { width: 20px; height: 20px; vertical-align: 0; }
+.sm-island.is-docked .sm-flag { display: inline-flex; }
+
+/* ---- 狀態一：目前停靠（放大、有金色繫船環、有旗子、小船停在旁邊） ---- */
+.sm-island.is-docked .sm-island__scene { transform: scale(1.06); transform-origin: 50% 90%; }
+.sm-island.is-docked .sm-island__ring { opacity: 1; transform: none; }
+.sm-island.is-docked .sm-island__plank { background: linear-gradient(180deg, var(--gold-hi), var(--sun-gold)); box-shadow: 0 3px 0 var(--gold-edge); }
+/* ---- 狀態二：已完成（燈塔全亮：金色光暈＋星星徽章，名牌有勾勾） ---- */
+.sm-island.is-done .sm-island__art { filter: drop-shadow(0 0 10px rgba(255, 209, 102, .95)) saturate(1.1); }
+/* ---- 狀態三：尚未開始（淡淡的霧、虛線圈、顏色變淡，仍然可以點） ---- */
+.sm-island.is-new .sm-island__art svg, .sm-island.is-new .sm-island__art img, .sm-island.is-new .sm-island__lh { filter: saturate(.5) brightness(1.04); }
+.sm-island.is-new .sm-island__scene::before {
+  content: ""; position: absolute; left: 2%; right: 12%; top: 8%; bottom: 0; border: 3px dashed rgba(255, 255, 255, .95); border-radius: 50%; pointer-events: none;
+}
+.sm-island.is-new .sm-island__scene::after {
+  content: ""; position: absolute; left: 0; right: 10%; bottom: 8%; height: 46%; pointer-events: none; border-radius: 50%;
+  background: radial-gradient(ellipse at 30% 60%, rgba(255, 255, 255, .55) 0 28%, transparent 60%), radial-gradient(ellipse at 72% 40%, rgba(255, 255, 255, .45) 0 24%, transparent 58%);
+}
+.sm-island.is-new .sm-island__plank { background: linear-gradient(180deg, #F4EBDD, #E4D7C0); box-shadow: 0 3px 0 #BFB097; }
+
+/* 燈塔點亮時的一次性動畫（由 LighthouseSystem 加上／移除 lh-pop） */
+.lh-pop .sm-island__lh { animation: sm-lhpop 1.2s ease-out; }
+@keyframes sm-lhpop { 0% { transform: scale(1); filter: brightness(1); } 40% { transform: scale(1.25); filter: brightness(1.5); } 100% { transform: scale(1); filter: brightness(1); } }
+
+/* ---------- 4. 小船（沿航線移動；位置由 map JS 以 transform 設定） ---------- */
+.sm-boat {
+  --boat-w: clamp(56px, 6.4vw, 84px);
+  position: absolute; left: 0; top: 0; z-index: var(--layer-art); width: var(--boat-w); height: calc(var(--boat-w) * 1.12); pointer-events: none; will-change: transform;
+  filter: drop-shadow(0 4px 3px rgba(11, 111, 164, .45));
+}
+.sm-boat__bob { position: absolute; inset: 0; display: block; animation: sm-bob 3.2s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes sm-bob { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-4px) rotate(2deg); } }
+.bt-sail { position: absolute; left: 0; top: 0; width: 100%; height: 58%; }
+.sm-boat__crew { position: absolute; left: 50%; bottom: 20%; width: 50%; transform: translateX(-50%); }
+.sm-boat__crew svg, .sm-boat__crew .ds-icon { display: block; width: 100%; height: auto; }
+.bt-hull { position: absolute; left: 0; bottom: 0; width: 100%; height: 36%; }
+.bt-mast { fill: none; }
+
+/* ---------- 5. 下方面板：目前位置、航線進度、進入島嶼 ---------- */
+.sm-panel {
+  position: relative; z-index: var(--layer-hud); flex: 0 0 auto; display: grid; grid-template-columns: 1fr; gap: var(--space-3); align-items: center;
+  padding: var(--space-3) calc(var(--gutter) + var(--safe-right)) calc(var(--space-3) + var(--safe-bottom)) calc(var(--gutter) + var(--safe-left));
+  background: var(--surface); border-top: 4px solid var(--ink); box-shadow: 0 -8px 20px rgba(23, 50, 77, .16);
+}
+.sm-panel__info { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); min-width: 0; }
+.sm-panel__pos { font: var(--fw-heavy) var(--fs-body)/1.2 var(--font-sans); color: var(--ink-soft); white-space: nowrap; }
+.sm-panel__pos b { color: var(--ink); font-weight: var(--fw-black); }
+.sm-panel__name { margin: 0; font: var(--fw-black) var(--fs-h3)/1.2 var(--font-sans); color: var(--ink); }
+.sm-panel__theme { flex: 1 1 100%; margin: 0; font: var(--fw-bold) var(--fs-caption)/1.4 var(--font-sans); color: var(--ink-soft); }
+.sm-panel__stats { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.sm-panel .ds-btn { justify-self: stretch; }
+
+/* 航線進度小圖：六個點連成一條線 */
+.sm-mini { position: relative; display: flex; justify-content: space-between; margin: 0; padding: 0; list-style: none; }
+.sm-mini::before { content: ""; position: absolute; left: 22px; right: 22px; top: 24px; height: 0; border-top: 4px dashed var(--line-soft); }
+.sm-mini li { position: relative; flex: 1 1 0; display: flex; justify-content: center; min-width: 0; }
+.sm-dot {
+  position: relative; display: grid; justify-items: center; gap: 2px; min-width: 44px; min-height: var(--tap-size); padding: 0; margin: 0; font: inherit; color: var(--ink); background: transparent; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.sm-dot__mark {
+  position: relative; display: grid; place-items: center; width: 32px; height: 32px; margin-top: 8px; border: 3px solid var(--line); border-radius: 50%; background: #fff; font: var(--fw-black) 15px/1 var(--font-num); color: var(--ink-soft);
+}
+.sm-dot__name { display: none; font: var(--fw-bold) var(--fs-caption)/1.1 var(--font-sans); color: var(--ink-soft); white-space: nowrap; }
+@media (min-width: 600px) { .sm-dot__name { display: block; } .sm-mini::before { top: 24px; } }
+.sm-dot:focus-visible { outline: var(--focus-width) solid var(--focus-ink); outline-offset: 2px; border-radius: var(--radius-sm); }
+/* 點的狀態：已完成＝金底＋星星＋實線邊；進行中＝半填色；尚未開始＝虛線空心；目前＝放大、粗黑框、名稱加粗 */
+.sm-dot[data-state="done"] .sm-dot__mark { background: var(--sun-gold); border-color: var(--gold-strong); color: var(--ink); }
+.sm-dot[data-state="done"] .sm-dot__mark::after { content: ""; position: absolute; right: -9px; top: -9px; width: 18px; height: 18px; background: var(--sun-gold) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m12 2.5 2.8 6 6.5.8-4.8 4.5 1.3 6.5L12 17l-5.8 3.3 1.3-6.5L2.7 9.3l6.5-.8z' fill='%23FFD166' stroke='%2317324D' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E") center / 100% no-repeat; border-radius: 50%; }
+.sm-dot[data-state="progress"] .sm-dot__mark { background: linear-gradient(90deg, #FFE08A 50%, #fff 50%); border-color: var(--gold-strong); }
+.sm-dot[data-state="new"] .sm-dot__mark { border-style: dashed; }
+.sm-dot[aria-current="location"] .sm-dot__mark { width: 40px; height: 40px; margin-top: 4px; border-width: 4px; border-style: solid; border-color: var(--ink); box-shadow: 0 0 0 3px var(--sun-gold); color: var(--ink); font-size: 17px; }
+.sm-dot[aria-current="location"] .sm-dot__name { color: var(--ink); font-weight: var(--fw-black); text-decoration: underline; text-underline-offset: 3px; }
+
+@media (min-width: 600px) {
+  .sm-panel { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "mini mini" "info go"; }
+  .sm-panel .sm-mini { grid-area: mini; }
+  .sm-panel__info { grid-area: info; }
+  .sm-panel .ds-btn { grid-area: go; min-width: 200px; }
+}
+@media (min-width: 1024px) {
+  .sm-panel { grid-template-columns: minmax(400px, 40%) minmax(0, 1fr) auto; grid-template-areas: "mini info go"; align-items: center; column-gap: var(--space-6); padding-inline: max(var(--gutter), calc((100% - 1120px) / 2)); }
+  .sm-panel__theme { flex: 1 1 100%; }
+}
+
+/* 左右滑動提示（只有海圖可以捲動時才出現；不會擋住點擊） */
+.sm-hint {
+  position: absolute; z-index: var(--layer-hud); left: 50%; bottom: 8px; display: none; margin: 0; padding: 2px 14px; transform: translateX(-50%); pointer-events: none;
+  font: var(--fw-heavy) var(--fs-caption)/1.4 var(--font-sans); color: var(--ink); background: rgba(255, 255, 255, .92); border: 2px solid var(--ink); border-radius: var(--radius-pill); white-space: nowrap; transition: opacity var(--dur-slow);
+}
+@media (max-width: 1023px) { .sm-hint { display: block; } }
+.sm-sea.is-touched .sm-hint { opacity: 0; }
+
+/* 遠方的小帆船、海鷗、浮標（純裝飾：只在原地輕輕漂動／拍翅，pointer-events 由 .sm-deco 一律關閉） */
+.sm-far { position: absolute; width: clamp(22px, 2.4vw, 34px); height: auto; animation: sm-far 22s ease-in-out infinite alternate; }
+.sm-far--1 { top: 41.5%; left: 12%; } .sm-far--2 { top: 44%; left: 37%; animation-duration: 28s; } .sm-far--3 { top: 42%; left: 63%; animation-duration: 25s; animation-delay: -8s; } .sm-far--4 { top: 45%; left: 88%; animation-duration: 30s; }
+@keyframes sm-far { from { translate: -24px 0; } to { translate: 28px 0; } }
+.sm-gull { position: absolute; width: clamp(20px, 2.2vw, 30px); height: auto; fill: none; stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; opacity: .75; animation: sm-flap 2.4s ease-in-out infinite; transform-origin: 50% 80%; }
+.sm-gull--1 { top: 16%; left: 17%; } .sm-gull--2 { top: 22%; left: 52%; animation-delay: -.8s; } .sm-gull--3 { top: 13%; left: 79%; animation-delay: -1.6s; }
+@keyframes sm-flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.55); } }
+.sm-buoy { position: absolute; width: clamp(14px, 1.6vw, 22px); aspect-ratio: 1; border-radius: 50%; background: repeating-linear-gradient(180deg, var(--coral) 0 33%, #fff 33% 66%); border: 2px solid var(--ink); animation: sm-buoy 3.6s ease-in-out infinite; }
+.sm-buoy--1 { top: 80%; left: 8%; } .sm-buoy--2 { top: 86%; left: 33%; animation-delay: -1.2s; } .sm-buoy--3 { top: 79%; left: 61%; animation-delay: -2.4s; } .sm-buoy--4 { top: 87%; left: 90%; animation-delay: -.6s; }
+@keyframes sm-buoy { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* ---------- 6. 小島的輕微動畫（棕櫚、風車、吊車、對話框） ---------- */
+.ia-sway { transform-origin: 68px 58px; animation: ia-sway 5s ease-in-out infinite; }
+@keyframes ia-sway { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
+.ia-blades { transform-origin: 68px 62px; animation: ia-spin 28s linear infinite; }
+@keyframes ia-spin { to { transform: rotate(360deg); } }
+.ia-swing { transform-origin: 113px 44px; animation: ia-swing 4.5s ease-in-out infinite; }
+@keyframes ia-swing { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.ia-float { animation: ia-float 3.6s ease-in-out infinite; }
+@keyframes ia-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* ---------- 7. 插圖用色（形狀在 js/sea-art.js；換成正式圖時這段可以整段不用） ---------- */
+.ia-svg .ia-o, .bt-sail .ia-o, .bt-hull .ia-o { stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.ia-svg .ia-line, .bt-sail .ia-line { fill: none; }
+.ia-faint { stroke-opacity: .4; }
+.ia-foam { fill: rgba(255, 255, 255, .6); }
+.ia-foam--in { fill: rgba(11, 111, 164, .16); }
+.ia-foam--arch { fill: rgba(255, 255, 255, .8); }
+.ia-sand { fill: #F6DDA3; } .ia-sand2 { fill: #E8C27C; }
+.ia-grass { fill: var(--isl); } .ia-grass2 { fill: var(--isl-2); }
+.ia-lawn { fill: #8FD06A; } .ia-leaf { fill: #2FA867; } .ia-leaf2 { fill: #5BCB86; }
+.ia-clay { fill: #F29A7A; }
+.ia-wood { fill: #E8B77C; } .ia-woodd { fill: #B9824E; } .ia-brown { fill: #7A4B2A; }
+.ia-white { fill: #fff; } .ia-cream { fill: #FFF3D6; }
+.ia-coral { fill: #FF7A59; } .ia-red { fill: #E2574C; } .ia-gold { fill: #FFD166; }
+.ia-sea { fill: #20C5D8; } .ia-deep { fill: #0B6FA4; }
+.ia-stone { fill: #D5DEE6; } .ia-stone2 { fill: #A8B8C6; }
+.ia-pink { fill: #FF9FB8; } .ia-teal { fill: #5ED1C0; } .ia-violet { fill: #8B6FE8; } .ia-mint { fill: #47C98B; }
+.ia-stem { stroke: #2FA867 !important; stroke-width: 3 !important; fill: none; }
+.ia-sign--coral { stroke: #FF7A59 !important; stroke-width: 3.5 !important; fill: none; }
+.ia-ghost { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-dasharray: 5 4; stroke-opacity: .55; }
+.ia-hi { fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; }
+.bt-mast { stroke-width: 2.5; }
+
+/* ---------- 8. 減少動態：取消長距離移動與大型動畫（小船直接出現在目的地；雲、浪、搖擺全部靜止） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .sm-cloud, .sm-waves, .sm-far, .sm-gull, .sm-buoy, .sm-boat__bob, .ia-sway, .ia-blades, .ia-swing, .ia-float, .lh-pop .sm-island__lh { animation: none !important; }
+  .sm-scroller { scroll-behavior: auto; }
+  .sm-island, .sm-island__ring { transition: none; }
+}
+:root.reduce-motion .sm-cloud, :root.reduce-motion .sm-waves, :root.reduce-motion .sm-far, :root.reduce-motion .sm-gull, :root.reduce-motion .sm-buoy, :root.reduce-motion .sm-boat__bob, :root.reduce-motion .ia-sway, :root.reduce-motion .ia-blades,
+:root.reduce-motion .ia-swing, :root.reduce-motion .ia-float, :root.reduce-motion .lh-pop .sm-island__lh { animation: none !important; }
+:root.reduce-motion .sm-scroller { scroll-behavior: auto; }
+:root.reduce-motion .sm-island, :root.reduce-motion .sm-island__ring { transition: none; }
+
+/* ---------- 9. 高對比 ---------- */
+@media (forced-colors: active) {
+  .sm-island { border: 2px solid ButtonText; }
+  .sm-island:focus-visible, .sm-dot:focus-visible { outline: 3px solid Highlight; }
+  .sm-flag, .sm-chip { border: 2px solid CanvasText; forced-color-adjust: none; }
+}
+
+/* ---------- 10. 橫放手機／矮視窗：壓縮上下空間 ---------- */
+@media (max-height: 520px) {
+  .sm-islands { padding-block: 16px 24px; }
+  .sm-hint { display: none; }
+}
+
+/* 小船停靠點：只是一個看不見的座標點（小船的底部中心會對準這裡） */
+.sm-berth { position: absolute; left: 22%; bottom: -3%; width: 2px; height: 2px; pointer-events: none; }
+
+/* 桌機：兩端留一點海面，第一座與最後一座島不要貼著螢幕邊緣 */
+@media (min-width: 1024px) { .sm-islands { padding-inline: clamp(8px, 1.4vw, 28px); } }
+
+/* 手機直向：頂部列壓成兩排、下方面板瘦身，讓「進入島嶼」一進地圖就看得到（不用往下捲）。
+   標誌改成只給讀屏軟體（入口頁已經有完整標誌），主要空間留給海圖。 */
+@media (max-width: 599px) and (min-height: 620px) {
+  .sm-hud { gap: var(--space-1) var(--space-3); padding-top: calc(var(--space-2) + var(--safe-top)); padding-bottom: var(--space-1); }
+  .sm-hud .app-logo { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .sm-panel { gap: var(--space-2); padding-top: var(--space-2); padding-bottom: calc(var(--space-2) + var(--safe-bottom)); }
+  .sm-panel__theme { display: none; }
+  .sm-islands { padding-block: clamp(24px, 6vh, 80px) clamp(10px, 2vh, 36px); }
+}

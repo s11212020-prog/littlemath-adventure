@@ -1,0 +1,84 @@
+/* ==========================================================================
+   階段 9F-1：手機海圖「精簡模式」（css/map-compact.css）
+   何時啟用：由 js/map-menu.js 在 #screen-map 加上 .is-compact——直向手機（寬 ≤ 599）而且「實際可用高度」≤ 720（離開門檻 736，避免網址列伸縮時閃動）。
+   不啟用精簡模式、也沒有帳號提醒橫幅時，本檔所有規則都不生效，海圖與 9E-2 完全相同。唯一不限精簡模式的是「帳號提醒橫幅避讓」兩條規則（9F-1 補修，見下方），而且要橫幅出現才生效。本檔只加規則，不改 css/map.css 的任何規則。
+   原則：
+   * 「進入島嶼」一進海圖就完整看得到，是整個畫面最明顯的按鈕（全寬、高度不變）。
+   * 不縮小任何點擊目標（進入島嶼、航線進度點、按鈕高度都維持現有數值）。
+   * 頂部只留兩張卡片；冒險日誌、我的帳號、班級、玩法指南、登出收進「更多」（js/map-menu.js 把點擊轉發給原按鈕）。
+   * 目前選取的島的「狀態、星星、燈塔」永遠在下方操作區那一行（.sm-panel__info）；島嶼卡片下方重複的小標籤才隱藏。
+   ========================================================================== */
+
+#btn-more { display: none; }
+.mm-ico { display: inline-block; flex: none; width: 26px; height: 26px; }
+.mm-ico * { stroke: none; }
+.mm-ico circle { fill: currentColor; }
+
+/* ---------- 頂部：只留兩張卡片，標誌只給讀屏軟體 ---------- */
+#screen-map.is-compact .sm-hud { gap: var(--space-1) var(--space-3); padding-top: calc(var(--space-2) + var(--safe-top)); padding-bottom: var(--space-1); }
+#screen-map.is-compact .sm-hud .app-logo { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+#screen-map.is-compact .sm-hud__btns { display: none; }
+#screen-map.is-compact .sm-hud__pills { flex: 1 1 100%; min-width: 0; flex-wrap: nowrap; gap: var(--space-2); }
+#screen-map.is-compact .sm-hud__pills > .sm-pill { flex: 1 1 0; min-width: 0; }
+/* 窄手機（≤ 340 寬，例如 320）：星星卡第二行說明文字隱藏，兩張卡片才排得進同一列；稱號仍可從整塊按鈕（稱號航線）看到 */
+@media (max-width: 340px) { #screen-map.is-compact .sm-pill .status-progress-text { display: none; } }
+
+/* ---------- 海面：島嶼狀態小標籤隱藏（下方操作區那一行有同樣的資訊） ---------- */
+#screen-map.is-compact .sm-island__meta { display: none; }
+#screen-map.is-compact .sm-islands { padding-block: clamp(8px, 2vh, 20px) clamp(6px, 1.5vh, 12px); }
+#screen-map.is-compact .sm-hint { display: none; }
+/* 六座島高低錯落的幅度縮小（只是外觀），省下垂直空間 */
+#screen-map.is-compact .sm-stop { margin-top: calc(var(--dy) * .4); }
+/* 可用高度很矮時，島嶼卡片（只是外觀的寬度上限）依高度縮小，最小 168px；島嶼按鈕本身仍遠大於 48px 點擊目標。
+   計算：可用高度 − 頂部列 − 操作區（約 430px，含上下留白）− 底部／頂部安全區，再依島嶼長寬比換成寬度。高度足夠時結果 ≥ 330px，等於沒有限制。 */
+#screen-map.is-compact .sm-island { max-width: clamp(168px, calc((100vh - 430px - var(--safe-top) - var(--safe-bottom)) * 1.83), 330px); }
+@supports (height: 100dvh) {
+  #screen-map.is-compact .sm-island { max-width: clamp(168px, calc((100dvh - 430px - var(--safe-top) - var(--safe-bottom)) * 1.83), 330px); }
+}
+@media (max-width: 340px) {
+  #screen-map.is-compact .sm-island { max-width: clamp(168px, calc((100vh - 438px - var(--safe-top) - var(--safe-bottom)) * 1.83), 330px); }
+  @supports (height: 100dvh) { #screen-map.is-compact .sm-island { max-width: clamp(168px, calc((100dvh - 438px - var(--safe-top) - var(--safe-bottom)) * 1.83), 330px); } }
+}
+
+/* ---------- 下方操作區：固定在畫面底部（含底部安全區） ---------- */
+#screen-map.is-compact .sm-panel {
+  position: sticky; bottom: 0; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: none; gap: var(--space-2);
+  padding-top: var(--space-2); padding-bottom: calc(var(--space-2) + var(--safe-bottom));
+}
+/* ---------- 帳號提醒橫幅避讓（9F-1 補修；一般版面與精簡版面都適用，只在橫幅出現時才生效） ----------
+   帳號提醒橫幅（階段 9B-2，舊帳號才有，position:fixed 貼在畫面底部）原本會蓋住操作區下緣（連「進入島嶼」也被蓋住）。
+   js/map-menu.js 量好橫幅占多高（--mm-banner，含 8px 空隙與安全區），並在 #screen-map 加上 has-banner；這裡讓操作區：
+   1) 固定在畫面底部（sticky），底部留白加上橫幅的高度——橫幅疊在這塊留白上，所有按鈕都在橫幅上方，不必關掉提醒就能繼續玩；
+   2) 橫幅已經蓋住底部安全區，所以不再重複加安全區的留白。
+   畫面太矮時整個畫面可以捲動；操作區是畫面最後一個區塊，捲到底就能看到所有內容。沒有橫幅（沒有 has-banner）時，這些規則完全不生效。 */
+#screen-map.has-banner .sm-panel { position: sticky; bottom: 0; padding-bottom: calc(var(--space-2) + var(--mm-banner, 0px)); }
+#screen-map.is-compact.has-banner .sm-panel { padding-bottom: calc(var(--space-2) + var(--mm-banner, 0px)); }   /* 精簡模式本來有自己的底部留白（含安全區），這裡改成橫幅的高度 */
+/* 橫放的手機等極矮畫面：操作區加上橫幅留白後太高，固定在底部會讓海面永遠被蓋住 → 不固定，跟著內容捲動（js/map-menu.js 判斷：操作區之上的空間放不進最深的島嶼中心時加上 banner-flow） */
+#screen-map.has-banner.banner-flow .sm-panel { position: relative; }
+/* 操作區固定時：鍵盤移動焦點（Tab 到島嶼）時，瀏覽器把焦點元素捲到操作區上方，不會停在被它蓋住的位置 */
+#screen-map.has-banner:not(.banner-flow) { scroll-padding-bottom: var(--mm-panelh, 0px); }
+/* 橫幅的疊層放到對話框之下：打開「更多」、船員小屋等對話框時，橫幅不會蓋住對話框底部的項目（原本橫幅在對話框之上） */
+#screen-map.active ~ #sp-banner:not([hidden]) { z-index: var(--layer-sheet); }
+#screen-map.is-compact .sm-panel__theme { display: none; }
+/* 「第 N／6 座」只留給讀屏軟體（航線進度點上已有數字與 aria-current）；這樣寬一點的手機，島名、狀態、星星、燈塔可以排成一行 */
+#screen-map.is-compact .sm-panel__pos { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+#screen-map.is-compact .sm-panel > .sm-mini,
+#screen-map.is-compact .sm-panel > .sm-panel__info,
+#screen-map.is-compact .sm-panel > #sm-enter,
+#screen-map.is-compact #sm-panel.has-cabin > #sm-enter { grid-area: auto; grid-column: 1 / -1; min-width: 0; }
+/* 第二列：船員小屋＋更多（小屋沒開放時，「更多」自己占滿一列）；空間不足時文字會換行，不縮小點擊目標 */
+#screen-map.is-compact #btn-more { display: inline-flex; grid-column: 1 / -1; min-width: 0; min-height: var(--tap-size); }
+#screen-map.is-compact #btn-more[hidden] { display: none; }
+#screen-map.is-compact #sm-panel.has-cabin > #btn-cabin-panel { display: inline-flex; grid-area: auto; grid-column: 1; min-width: 0; min-height: var(--tap-size); justify-self: stretch; }
+#screen-map.is-compact #sm-panel.has-cabin > #btn-more { grid-column: 2; }
+#screen-map.is-compact .sm-panel .ds-btn { white-space: normal; }
+
+/* ---------- 「更多」選單（底部面板；沿用 ds-overlay--sheet） ---------- */
+.mm-dialog { display: grid; gap: var(--space-3); }
+.mm-title { margin: 0; font: var(--fw-black) var(--fs-h3)/1.2 var(--font-sans); color: var(--ink); }
+.mm-title:focus { outline: none; }
+.mm-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.mm-list .ds-btn { width: 100%; min-height: var(--tap-size); justify-content: flex-start; }
+.mm-empty { margin: 0; font: var(--fw-bold) var(--fs-body)/1.4 var(--font-sans); color: var(--ink-soft); }
+
+@media (forced-colors: active) { .mm-ico circle { fill: ButtonText; } }

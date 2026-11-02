@@ -1,0 +1,94 @@
+/* 階段 7：裝置相容性（只處理「不同裝置／瀏覽器的差異」；沒有改任何美術、題庫、功能邏輯）
+   最後載入，所以只用「補強」的寫法：
+   - 一般規則：只加安全區、鍵盤、點擊目標、Safari 前綴這類「原本沒有」的東西。
+   - @supports not (...)：只有舊瀏覽器（不支援該功能）才會套用，Chrome／新版 Safari 完全不受影響。
+   目前支援基準：Chrome／Edge 105+、Android Chrome 105+、Safari／iOS 15.4+（含 iPadOS）、Firefox 110+。
+   Safari 15.0～15.3 與 16.0～16.1 另有降級寫法（見第 7 節），版面會正常，只是少一點裝飾。 */
+
+/* ---------- 1. 文字大小：iOS 橫向時不要自動放大字（會讓版面和直向不一樣） ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+/* ---------- 2. 瀏海／圓角／Home 指示條（安全區） ----------
+   index.html 的 viewport 有 viewport-fit=cover，畫面會鋪滿到螢幕邊緣，所以每個畫面都要自己讓開。
+   入口、海圖、島內、船員登記所在階段 3～6 已經處理；這裡補上其餘的畫面與彈窗。 */
+.top-status-bar { padding-top: calc(15px + var(--safe-top)); padding-right: calc(20px + var(--safe-right)); padding-left: calc(20px + var(--safe-left)); }
+#screen-admin-dashboard { padding-top: max(20px, calc(var(--safe-top) + 8px)); padding-right: max(20px, var(--safe-right)); padding-bottom: max(20px, calc(var(--safe-bottom) + 8px)); padding-left: max(20px, var(--safe-left)); }
+.modal-overlay { padding-top: max(20px, var(--safe-top)); padding-right: max(20px, var(--safe-right)); padding-bottom: max(20px, var(--safe-bottom)); padding-left: max(20px, var(--safe-left)); }
+#ultimate-celebration, .noscript-box { padding-top: max(20px, var(--safe-top)); padding-right: max(20px, var(--safe-right)); padding-bottom: max(20px, var(--safe-bottom)); padding-left: max(20px, var(--safe-left)); box-sizing: border-box; }
+/* 島嶼港口彈窗：高度要扣掉上下安全區，底部的按鈕才不會壓在 Home 指示條上 */
+.zp-dialog { max-height: calc(100dvh - 2 * var(--space-3) - var(--safe-top) - var(--safe-bottom)); }
+#screen-history .history-table-container { margin-top: calc(80px + var(--safe-top)); }
+
+/* ---------- 3. 虛擬鍵盤 ----------
+   iOS Safari 和 Android Chrome 的鍵盤是「蓋在網頁上面」，網頁高度不會變。js/device.js 量出被蓋住的高度放進 --kb，
+   鍵盤打開時（html.kb-open）在畫面底部多留這麼多空間，輸入框和送出鈕就捲得到鍵盤上方。 */
+html.kb-open .screen.active { padding-bottom: var(--kb, 0px); }
+html.kb-open .btn-next-pop { bottom: calc(10px + var(--safe-bottom) + var(--kb, 0px)); }
+html.kb-open .modal-overlay, html.kb-open .zp-overlay, html.kb-open .ds-overlay { bottom: var(--kb, 0px); }
+
+/* ---------- 4. 觸控裝置：點擊目標 ≥ 44px、輸入框字級 ≥ 16px（iOS 字級小於 16px 的輸入框一點就會自動放大整個網頁） ---------- */
+@media (pointer: coarse) {
+  .filter-bar select, .filter-bar input { min-height: 44px; font-size: 16px; }
+  .btn-view, .admin-modal-content button { min-height: 44px; min-width: 44px; }
+}
+/* 連續快速點數字鍵時，Safari 會當成「雙擊放大」。manipulation 只擋掉雙擊放大，仍可用雙指縮放（不影響 200%／400% 放大）。 */
+button, [role="button"], a, select, label, summary, .ig-key, .ds-btn, .btn-game, .crew-card { touch-action: manipulation; }
+
+/* ---------- 5. Safari 需要加 -webkit- 前綴的屬性 ---------- */
+.status-badge { -webkit-backdrop-filter: blur(5px); }
+.modal-overlay { -webkit-backdrop-filter: blur(3px); }
+.zp-overlay { -webkit-backdrop-filter: none; }
+button, [role="button"], .ig-key, .ds-btn, .btn-game, .crew-card { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+input, textarea, select { -webkit-user-select: text; user-select: text; }
+.sm-scroller::-webkit-scrollbar { display: none; width: 0; height: 0; }
+/* 數字輸入框右邊的加減小箭頭（Chrome／Safari 桌機）會壓到數字，三種瀏覽器統一收起來；答案框本身的樣式不變 */
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ---------- 6. 小螢幕／橫向手機：高度很矮時，內容不要被固定元素擋住 ---------- */
+@media (max-height: 520px) and (orientation: landscape) {
+  .btn-next-pop { bottom: calc(6px + var(--safe-bottom)); }
+}
+
+/* ---------- 7. 舊瀏覽器降級（只有不支援時才會套用） ---------- */
+/* 7-1. 不支援 dvh（Safari 15.3 以前）：改用 vh */
+@supports not (height: 1dvh) {
+  .ds-dialog { max-height: calc(100vh - 2 * var(--gutter) - var(--safe-top) - var(--safe-bottom)); }
+  .ig-theater { width: min(100%, calc(46vh * 16 / 9), 780px); }
+  .zp-dialog { max-height: calc(100vh - 2 * var(--space-3) - var(--safe-top) - var(--safe-bottom)); }
+}
+@supports not (height: 1dvh) {
+  @media (max-height: 520px) and (orientation: landscape) { .ig-theater { width: min(100%, calc(60vh * 16 / 9), 780px); } }
+}
+/* 7-2. 不支援 :has()（Safari 15.3 以前）：題目區永遠包住浮動的朗讀鈕 */
+@supports not selector(:has(*)) {
+  .ig-q { display: flow-root; }
+}
+/* 7-3. 不支援 color-mix()（Safari 16.1 以前、Chrome 110 以前）：改用半透明白／島嶼色 */
+@supports not (background: color-mix(in srgb, red 50%, white)) {
+  .ig-screen { --ig-soft2: var(--island-soft); }
+  .ig-wave { background: linear-gradient(180deg, transparent, var(--island-secondary)); opacity: .45; }
+  .ig-pad { background: rgba(255, 255, 255, .84); }
+}
+/* 7-4. 不支援容器查詢單位 cqw（Safari 15.x、Chrome 104 以前）：js/device.js 量出容器寬度的 1%，放進 --cqw。 */
+@supports not (width: 1cqw) {
+  .th-actor { width: calc(12 * var(--cqw, 7px)); }
+  .th-eq { font: var(--fw-black) clamp(18px, calc(5.4 * var(--cqw, 7px)), 36px)/1.25 var(--font-num); }
+  .th-potcell { width: calc(17 * var(--cqw, 7px)); }
+  .th-pile { gap: calc(1 * var(--cqw, 7px)); min-height: calc(14 * var(--cqw, 7px)); }
+  .th-pile .th-prop { width: calc(9.5 * var(--cqw, 7px)); }
+  .th-plate { width: calc(22 * var(--cqw, 7px)); }
+  .th-plate-candies .th-prop { width: calc(7.2 * var(--cqw, 7px)); }
+  .th-col { width: calc(8 * var(--cqw, 7px)); }
+  .th-steps { gap: calc(1.2 * var(--cqw, 7px)); }
+  .th-steps__li { font: var(--fw-heavy) max(14px, calc(3 * var(--cqw, 7px)))/1.1 var(--font-sans); }
+  .th-expr { gap: calc(1.6 * var(--cqw, 7px)); }
+  .th-tile { min-width: calc(10 * var(--cqw, 7px)); font: var(--fw-black) clamp(22px, calc(8 * var(--cqw, 7px)), 52px)/1.25 var(--font-num); }
+  .th-op { font: var(--fw-black) clamp(22px, calc(8 * var(--cqw, 7px)), 52px)/1.2 var(--font-num); }
+  .sm-island__plank--long { font-size: min(var(--fs-h3), calc(12 * var(--cqw, 7px))); padding-inline: clamp(6px, calc(4 * var(--cqw, 7px)), 16px); }
+}
+@supports not (width: 1cqw) {
+  @media (min-width: 600px) and (max-width: 1023px) {
+    .sm-world { --world-w: calc(200 * var(--cqw, 4px) - 2 * var(--edge)); --stop-w: calc((100 * var(--cqw, 4px) - 2 * var(--edge)) / 3); }
+  }
+}

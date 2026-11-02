@@ -1,0 +1,59 @@
+/* 階段 9D-2：老師任務（學生清單、教師建立與進度、完成後提示）。
+   只用既有 tokens；不使用外部字型、圖片或 CDN。狀態一律有文字標籤，不只靠顏色。 */
+
+[hidden].ta-form, #tal-create[hidden], .ta-panel[hidden] { display: none; }
+
+/* 學生任務清單 */
+.st-screen { overflow-y: auto; -webkit-overflow-scrolling: touch; justify-content: flex-start; }
+.st-screen .en-wrap { margin-block: auto; }
+.stt-sec { margin: var(--space-3) 0; }
+.stt-card { display: grid; gap: 4px; margin: var(--space-2) 0; padding: 10px 12px; border: 2px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--white-solid); color: var(--ink); text-align: left; }
+.stt-card.stt-done { border-color: var(--mint-strong); }
+.stt-card.stt-overdue { border-color: var(--gold-edge); }
+.stt-card.stt-undetermined { border-style: dashed; border-color: var(--ocean-deep); }
+.stt-head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; justify-content: space-between; }
+.stt-title { margin: 0; font: var(--fw-heavy) var(--fs-body)/1.4 var(--font-sans); overflow-wrap: anywhere; }
+.stt-chip--plain { --chip-bg: var(--surface); --chip-ink: var(--ink); --chip-line: var(--line); }
+.stt-meta, .stt-desc { margin: 0; color: var(--ink); font: var(--fw-medium) var(--fs-caption)/1.6 var(--font-sans); overflow-wrap: anywhere; }
+.stt-desc { color: var(--ink-soft); }
+
+/* 完成一區後的任務提示（放在結果卡下面） */
+.tn-wrap { margin: var(--space-3) auto 0; max-width: 560px; }
+.tn { display: grid; gap: 6px; padding: 10px 12px; border: 2px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--white-solid); color: var(--ink); text-align: left; }
+.tn--ok { border-color: var(--mint-strong); background: var(--state-success-bg); }
+.tn--warn { border-color: var(--gold-edge); background: var(--state-warn-bg); }
+.tn--wait { border-style: dashed; }
+.tn p { margin: 0; font: var(--fw-medium) var(--fs-caption)/1.6 var(--font-sans); overflow-wrap: anywhere; }
+.tn p.tn__head { font-weight: var(--fw-heavy); }
+.tn__act { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.tn__act .ds-btn { min-height: 44px; }
+#stt-pending:empty { display: none; }
+#stt-pending .tn { margin: var(--space-2) 0; }
+
+/* 教師任務畫面 */
+.ta-form { max-width: 560px; }
+.ta-select { appearance: auto; }
+.ta-cards { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); margin: var(--space-3) 0; }
+.ta-task.is-closed { opacity: .85; }
+.ta-title { margin: 0; overflow-wrap: anywhere; }
+.ta-chip--plain { --chip-bg: var(--surface); --chip-ink: var(--ink); --chip-line: var(--line); }
+.ta-notes { margin: var(--space-2) 0; }
+.ta-note { margin: var(--space-2) 0; }
+.ta-summary { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-2) 0; }
+.ta-sum--undetermined { border-style: dashed; }
+.ta-counts:empty, .ta-summary:empty { display: none; }
+.ta-na { font-style: italic; color: var(--ink-soft); }
+.ta-table td, .ta-table th { white-space: nowrap; }
+.ta-table { min-width: 900px; }
+.ta-table[data-kind="left"] { min-width: 760px; }
+.ta-screen .ds-error:empty { display: none; }
+.st-screen .ds-error:empty { display: none; }
+.ta-panel .atp-act { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+
+@media (max-width: 480px) {
+  .tn__act .ds-btn { flex: 1 1 100%; }
+  .ta-cards { grid-template-columns: 1fr; }
+}
+
+/* 觸控目標：新畫面的按鈕一律至少 44px 高 */
+.ta-screen .btn-view, .ta-screen .ds-btn, .st-screen .ds-btn, .tn .ds-btn { min-height: 44px; }

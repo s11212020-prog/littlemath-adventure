@@ -1,0 +1,172 @@
+/* ==========================================================================
+   《小小算術家：六島大冒險》設計 tokens（階段 3）
+   所有顏色、圓角、陰影、間距、字級、層級、動畫時間都集中在這裡。
+   規則：元件與畫面只能引用這些變數，不要在別處再寫死色碼或 z-index。
+   命名沿用規格書：--ocean-deep / --ocean-bright / --ocean-pale / --coral /
+   --sun-gold / --mint / --story-violet / --ink / --surface / --danger。
+   舊版變數（--primary、--ocean-light…）仍留在 styles.css，等畫面逐階段改版後再移除。
+   ========================================================================== */
+
+:root {
+  /* ---------- 1. 規格書指定的基礎色 ---------- */
+  --ocean-deep:   #0B6FA4;   /* 深海主色：頁首、教師端導覽 */
+  --ocean-bright: #20C5D8;   /* 亮海洋色：海面、選取、主要互動 */
+  --ocean-pale:   #D9F7F5;   /* 淺水色：卡片背景、提示區 */
+  --coral:        #FF7A59;   /* 珊瑚橘：主要行動、減法島 */
+  --sun-gold:     #FFD166;   /* 陽光黃：星星、燈塔、成就 */
+  --mint:         #47C98B;   /* 薄荷綠：成功、加法島 */
+  --story-violet: #8B6FE8;   /* 故事紫：應用題島 */
+  --ink:          #17324D;   /* 墨水藍：主要文字（不用純黑） */
+  --surface:      #FFF9E8;   /* 乳白表面：題目卡、表單 */
+  --danger:       #D95763;   /* 錯誤紅：需搭配文字與圖示 */
+
+  /* ---------- 2. 衍生色（為了讓「有文字」的元件通過 WCAG AA） ---------- */
+  --white:            #FFFFFF;
+  --story-violet-strong: #6A4FD6;  /* 紫色按鈕底：白字 5.7:1 */
+  --danger-strong:    #B83C4A;     /* 錯誤按鈕底：白字 5.5:1 */
+  --mint-strong:      #167A4C;     /* 綠色文字／圖示：在乳白上 ≥ 4.5:1 */
+  --gold-strong:      #8A5200;     /* 黃色系文字：在乳白上 ≥ 4.5:1 */
+  --ink-soft:         #4A6178;     /* 次要文字：在乳白上 6.1:1 */
+  --line:             #5E7C93;     /* 元件邊框（非文字對比 ≥ 3:1） */
+  --line-soft:        #BFD3DF;     /* 分隔線、表格線（純裝飾） */
+  --disabled-face:    #DDE7EC;
+  --disabled-ink:     #4F6578;     /* 停用文字在 --disabled-face 上 ≥ 4.5:1 */
+
+  /* 材質與插畫輔助色 */
+  --skin:          #FFD9B8;
+  --wood-hi:       #F2C894;  --wood-lo: #E2AA6F;  --wood-edge: #A8703F;  --wood-nail: #8A5A2B;
+  --rock:          #B7A48A;
+  --night-window:  #2B5C7C;   /* 燈塔未亮的窗 */
+  --sky-top:       #BDEBFF;   --sky-bottom: #A6E7EA;
+  --skeleton-a:    #E7EEF2;   --skeleton-b: #F6F9FB;
+  --danger-hi:     #D26270;
+  --white-solid:   #FFFFFF;
+
+  /* 按鈕立體邊（各色再深一階） */
+  --coral-edge:   #C9512F;
+  --bright-edge:  #0E92A3;
+  --deep-edge:    #07496E;
+  --mint-edge:    #2E9A63;
+  --violet-edge:  #4A32A8;
+  --gold-edge:    #C9961F;
+  --danger-edge:  #862B36;
+  --surface-edge: #C7BFA6;
+
+  /* 按鈕上緣亮面 */
+  --coral-hi:   #FF9C82;
+  --bright-hi:  #6BDCE8;
+  --deep-hi:    #3A93C2;
+  --mint-hi:    #7BDDAB;
+  --violet-hi:  #8E75F0;
+  --gold-hi:    #FFE29A;
+
+  /* ---------- 3. 六島主色（島嶼輪廓、地標、圖示須同時不同，不能只靠顏色） ---------- */
+  --island-add:      #47C98B;  --island-add-2:  #2FB8C4;   /* 翠綠＋湖水藍 */
+  --island-sub:      #FF7A59;  --island-sub-2:  #C98B57;   /* 珊瑚橘＋木色 */
+  --island-mul:      #7BC74D;  --island-mul-2:  #FFD166;   /* 葉綠＋陽光黃 */
+  --island-div:      #FF9FB8;  --island-div-2:  #5ED1C0;   /* 粉紅＋青綠 */
+  --island-wp:       #8B6FE8;  --island-wp-2:   #FF8FA3;   /* 故事紫＋珊瑚粉 */
+  --island-mix:      #0B6FA4;  --island-mix-2:  #E8B63A;   /* 深海藍＋金 */
+
+  /* ---------- 4. 狀態色（一律要搭配文字或圖示，不能單靠顏色） ---------- */
+  --state-success-bg: #E3F7EC;  --state-success-ink: var(--mint-strong);
+  --state-info-bg:    var(--ocean-pale); --state-info-ink: var(--ocean-deep);
+  --state-warn-bg:    #FFF1CC;  --state-warn-ink:    var(--gold-strong);
+  --state-danger-bg:  #FDE7E9;  --state-danger-ink:  var(--danger-strong);
+
+  /* ---------- 5. 圓角 ---------- */
+  --radius-xs: 8px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-card: 20px;       /* 卡片 16–24px */
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  /* ---------- 6. 間距（4px 基準） ---------- */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-7: 32px; --space-8: 48px;
+  --gutter: 16px;            /* 手機左右留白 */
+
+  /* ---------- 7. 陰影（柔和、偏藍，不用純黑） ---------- */
+  --shadow-soft:  0 6px 18px rgba(11, 111, 164, .16);
+  --shadow-card:  0 8px 24px rgba(23, 50, 77, .14), 0 2px 0 rgba(255, 255, 255, .7) inset;
+  --shadow-pop:   0 14px 32px rgba(23, 50, 77, .22);
+  --shadow-hud:   0 4px 0 rgba(23, 50, 77, .12), 0 8px 16px rgba(23, 50, 77, .12);
+  --glow-gold:    0 0 14px 4px rgba(255, 209, 102, .75);
+
+  /* ---------- 8. 字體與字級（Noto Sans TC；用 clamp 流動縮放） ---------- */
+  --font-sans: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", "Heiti TC", system-ui, sans-serif;
+  --font-num:  "Noto Sans TC", "Segoe UI", system-ui, sans-serif;
+
+  --fs-caption:  clamp(14px, 13px + .2vw, 15px);   /* 只用在次要說明，不放題目 */
+  --fs-body:     clamp(17px, 16px + .3vw, 19px);   /* 學生端正文：手機 ≥17、桌機 ≥18 */
+  --fs-btn:      clamp(16px, 15px + .35vw, 20px);  /* 按鈕文字 ≥16 */
+  --fs-h3:       clamp(19px, 17px + .6vw, 24px);
+  --fs-h2:       clamp(22px, 18px + 1.2vw, 32px);
+  --fs-h1:       clamp(26px, 20px + 2.4vw, 44px);
+  --fs-question: clamp(22px, 18px + 1.4vw, 32px);  /* 題目與關鍵數字 22–32 */
+  --fs-hero:     clamp(30px, 22px + 3.4vw, 56px);  /* 入口標題 */
+  --fs-teacher:  clamp(15px, 14px + .2vw, 16px);   /* 教師端較緊湊 */
+  --lh-tight: 1.2;  --lh-body: 1.6;
+  --fw-regular: 400; --fw-medium: 500; --fw-bold: 700; --fw-heavy: 800; --fw-black: 900;
+
+  /* ---------- 9. 互動尺寸 ---------- */
+  --tap-size: 48px;          /* 所有可點物件最小 48×48 */
+  --focus-width: 3px;        /* focus-visible 外框至少 3px */
+  --focus-ink: var(--ink);
+  --focus-halo: #FFFFFF;
+
+  /* ---------- 10. 層級（z-index 只能用這些） ---------- */
+  --layer-bg: 0;
+  --layer-map: 10;
+  --layer-art: 20;
+  --layer-hud: 30;
+  --layer-sheet: 50;
+  --layer-dialog: 60;
+  --layer-toast: 80;
+  --layer-loading: 100;
+
+  /* ---------- 11. 動畫時間（回饋 ≤ 約 1.2 秒） ---------- */
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+  --dur-feedback: 1200ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+  --ease-pop: cubic-bezier(.34, 1.56, .64, 1);
+
+  /* ---------- 12. 響應式斷點（給 JS 與文件參考；CSS 媒體查詢請寫實際數值） ---------- */
+  --bp-phone-max: 599px;
+  --bp-tablet-max: 1023px;
+
+  /* ---------- 13. 安全區（瀏覽器瀏海、底部手勢條） ---------- */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+/* ---------- 減少動態：系統偏好 或 手動開關（html.reduce-motion） ---------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0.01ms; --dur-fast: 0.01ms; --dur-base: 0.01ms; --dur-slow: 0.01ms;
+  }
+}
+:root.reduce-motion {
+  --dur-instant: 0.01ms; --dur-fast: 0.01ms; --dur-base: 0.01ms; --dur-slow: 0.01ms;
+}
+
+/* ---------- 基礎排版類別（階段 6 起逐頁套用） ---------- */
+.ds-text-body   { font: var(--fw-medium) var(--fs-body)/var(--lh-body) var(--font-sans); color: var(--ink); }
+.ds-text-caption{ font: var(--fw-medium) var(--fs-caption)/1.5 var(--font-sans); color: var(--ink-soft); }
+.ds-text-h3     { font: var(--fw-heavy) var(--fs-h3)/var(--lh-tight) var(--font-sans); color: var(--ink); }
+.ds-text-h2     { font: var(--fw-heavy) var(--fs-h2)/var(--lh-tight) var(--font-sans); color: var(--ink); }
+.ds-text-h1     { font: var(--fw-black) var(--fs-h1)/var(--lh-tight) var(--font-sans); color: var(--ink); }
+.ds-text-question { font: var(--fw-bold) var(--fs-question)/1.4 var(--font-sans); color: var(--ink); }
+.ds-text-number { font-family: var(--font-num); font-variant-numeric: tabular-nums; font-weight: var(--fw-black); }
+/* 海上標題：白字＋墨藍描邊，浮在海面或插圖上也能讀（描邊畫在字外面，不吃掉筆畫） */
+.ds-title-stroke {
+  font: var(--fw-black) var(--fs-hero)/var(--lh-tight) var(--font-sans);
+  color: var(--white); -webkit-text-stroke: 8px var(--ink); paint-order: stroke fill;
+  text-shadow: 0 4px 0 var(--ink); letter-spacing: .02em; text-wrap: balance;
+}
