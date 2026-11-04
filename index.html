@@ -88,18 +88,18 @@
                 <div class="en-card__brand"><span class="app-name"><span class="bn-main">小小算術家</span><span class="bn-colon">：</span><span class="bn-sub">六島大冒險</span></span></div>
                 <h1 class="ds-plank en-card__title"><span data-icon="crew" data-size="30"></span>小領航員登入</h1>
                 <div class="ds-field">
-                    <label class="ds-label" for="student-username">請輸入專屬代碼</label>
+                    <label class="ds-label" for="student-username">帳號</label>
                     <input type="text" id="student-username" class="ds-input" placeholder="例如: 3A01小明" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
                 </div>
-                <div class="ds-field" id="student-pin-wrap" hidden>
-                    <label class="ds-label" for="student-pin">密碼（有設定才要填；沒有設定就留空）</label>
+                <div class="ds-field" id="student-pin-wrap">
+                    <label class="ds-label" for="student-pin">密碼</label>
                     <input type="password" id="student-pin" class="ds-input" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="4～6 個數字" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go">
                 </div>
                 <div class="en-actions">
                     <button type="button" class="ds-btn ds-btn--coral ds-btn--block" onclick="doStudentAuth('register')"><span data-icon="star" data-size="26"></span>建立帳號</button>
                     <button type="button" class="ds-btn ds-btn--sea ds-btn--block" onclick="doStudentAuth('login')"><span data-icon="next" data-size="26"></span>登入</button>
                 </div>
-                <div class="sp-links" id="student-pin-links" hidden>
+                <div class="sp-links" id="student-pin-links">
                     <button type="button" class="ds-btn ds-btn--ghost ds-btn--block" id="btn-sp-forgot" onclick="StudentPin.openForgot()">忘記密碼？</button>
                 </div>
                 <button type="button" class="ds-btn ds-btn--ghost ds-btn--block en-back" onclick="logoutToRoleSelect()"><span data-icon="back" data-size="26"></span>返回身分選擇</button>
@@ -801,7 +801,7 @@
     <script src="js/narrator.js?v=2026.11.02-9F-3a"></script>
     <script src="js/lighthouse.js?v=2026.11.02-9F-3a"></script>
     <script src="js/answer-flow.js?v=2026.11.02-9F-3a"></script>
-    <script src="js/auth.js?v=2026.11.02-9F-3a"></script>
+    <script src="js/auth.js?v=2026.11.04-9F-3a-tourfix2"></script>
     <script src="js/crew-ui.js?v=2026.11.02-9F-3a"></script>
     <script src="js/island.js?v=2026.11.02-9F-3a"></script>
     <script src="js/animation.js?v=2026.11.02-9F-3a"></script>
@@ -814,7 +814,7 @@
     <script src="js/tutorial.js?v=2026.11.03-9F-3a-tourfix1"></script>
     <script src="js/teacher.js?v=2026.11.02-9F-3a"></script>
     <script src="js/teacher-portal.js?v=2026.11.03-9F-3a-tourfix1"></script>
-    <script src="js/student-pin.js?v=2026.11.03-9F-3a-tourfix1"></script>
+    <script src="js/student-pin.js?v=2026.11.04-9F-3a-tourfix2"></script>
     <script src="js/student-admin.js?v=2026.11.03-9F-3a-tourfix1"></script>
     <script src="js/student-class.js?v=2026.11.03-9F-3a-tourfix1"></script>
     <script src="js/teacher-class.js?v=2026.11.03-9F-3a-tourfix1"></script>
