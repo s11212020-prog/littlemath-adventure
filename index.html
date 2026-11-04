@@ -30,7 +30,7 @@
     <link rel="stylesheet" href="css/final.css?v=2026.11.02-9F-3a">
     <link rel="stylesheet" href="css/lifebuoy.css?v=2026.11.02-9F-3a">
     <link rel="stylesheet" href="css/title-route.css?v=2026.11.02-9F-3a">
-    <link rel="stylesheet" href="css/tutorial.css?v=2026.11.02-9F-3a">
+    <link rel="stylesheet" href="css/tutorial.css?v=2026.11.04-9F-3a-tourfix2.2">
     <link rel="stylesheet" href="css/stage9.css?v=2026.11.02-9F-3a">
     <link rel="stylesheet" href="css/stage9d.css?v=2026.11.02-9F-3a">
     <link rel="stylesheet" href="css/reward-art.css?v=2026.11.02-9F-3a">
@@ -568,9 +568,9 @@
                     <div id="tr-terms" class="tp-terms" hidden>
                         <ul>
                             <li>只在教學需要的範圍內使用學生的學習資料，不用於教學以外的目的。</li>
-                            <li>不把學生的帳號、PIN、學習紀錄或截圖分享給無關的人，也不公開張貼。</li>
+                            <li>不把學生的帳號、密碼、學習紀錄或截圖分享給無關的人，也不公開張貼。</li>
                             <li>學生是否加入班級由學生決定；教師僅能依學生確認分享及系統權限查看資料。學生離班後，不再取得其後續活動，只能保留規範允許的歷史班級任務結果。</li>
-                            <li>不向學生索取、也不查看學生的原始 PIN；學生忘記 PIN 時，只能透過系統的受控流程重設。</li>
+                            <li>不向學生索取、也不查看學生的原始密碼；學生忘記密碼時，只能透過系統的受控流程重設。</li>
                             <li>發現資料外洩、帳號被盜或學生要求退出時，要立即處理並通知管理員。</li>
                         </ul>
                         <p class="tp-note" id="tr-terms-draft">這是草稿，尚未經學校核准。</p>
@@ -657,9 +657,9 @@
 
             <section class="td-card" id="admin-students-panel" hidden aria-labelledby="ast-h">
                 <h2 class="td-h td-h--sm" id="ast-h"><span data-icon="crew" data-size="26"></span>學生帳號保護</h2>
-                <p class="tab-note">學生忘記密碼、也沒有保護碼時，可以在這裡重設。學生會拿到臨時密碼，登入後必須自己更改。請只在「實際確認眼前的人就是這個帳號的本人」之後才重設。</p>
+                <p class="tab-note">學生忘記密碼、也沒有密碼重設碼時，可以在這裡重設。學生會拿到臨時密碼，登入後必須自己更改。請只在「實際確認眼前的人就是這個帳號的本人」之後才重設。</p>
                 <div class="atp-form">
-                    <label>學生的登入代碼<input type="text" id="ast-username" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+                    <label>學生的帳號<input type="text" id="ast-username" maxlength="40" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
                     <button type="button" class="btn-view" id="ast-find" onclick="AdminStudents.find()">查詢保護狀態</button>
                     <button type="button" class="btn-view" id="ast-review" onclick="AdminStudents.listReview()">待處理名單</button>
                     <button type="button" class="btn-view" id="ast-audit" onclick="AdminStudents.listAudit()">稽核紀錄</button>
@@ -675,7 +675,7 @@
                     </div>
                     <div class="atp-form" id="ast-other-wrap" hidden><label>其他確認依據<input type="text" id="ast-other" maxlength="30" autocomplete="off"></label></div>
                     <div class="atp-form"><label>原因（4～30 字）<input type="text" id="ast-reason" maxlength="30" autocomplete="off"></label></div>
-                    <p class="tp-note">顯示名稱、頭像和稱號，知道登入代碼的人也看得到，只能用來找帳號，不能當作確認身分的依據。沒有可靠依據請不要重設。</p>
+                    <p class="tp-note">顯示名稱、頭像和稱號，知道帳號的人也看得到，只能用來找帳號，不能當作確認身分的依據。沒有可靠依據請不要重設。</p>
                     <div class="atp-act">
                         <button type="button" class="ds-btn ds-btn--gold ds-btn--sm" id="ast-reset" onclick="AdminStudents.resetPin()">重設學生密碼</button>
                         <button type="button" class="btn-view" id="ast-clear-review" onclick="AdminStudents.clearReview()">清除待處理標記</button>
@@ -794,7 +794,7 @@
     <script src="js/prop-art.js?v=2026.11.02-9F-3a"></script>
     <script src="js/scene-art.js?v=2026.11.02-9F-3a"></script>
     <script src="js/session.js?v=2026.11.02-9F-3a"></script>
-    <script src="js/app.js?v=2026.11.03-9F-3a-tourfix1"></script>
+    <script src="js/app.js?v=2026.11.04-9F-3a-tourfix2.1"></script>
     <script src="js/map.js?v=2026.11.02-9F-3a"></script>
     <script src="js/sea-art.js?v=2026.11.02-9F-3a"></script>
     <script src="js/sea-map.js?v=2026.11.02-9F-3a"></script>
@@ -811,13 +811,13 @@
     <script src="js/task-run.js?v=2026.11.02-9F-3a"></script>
     <script src="js/island-ui.js?v=2026.11.02-9F-3a"></script>
     <script src="js/title-route.js?v=2026.11.02-9F-3a"></script>
-    <script src="js/tutorial.js?v=2026.11.03-9F-3a-tourfix1"></script>
+    <script src="js/tutorial.js?v=2026.11.04-9F-3a-tourfix2.2"></script>
     <script src="js/teacher.js?v=2026.11.02-9F-3a"></script>
     <script src="js/teacher-portal.js?v=2026.11.03-9F-3a-tourfix1"></script>
-    <script src="js/student-pin.js?v=2026.11.04-9F-3a-tourfix2"></script>
-    <script src="js/student-admin.js?v=2026.11.03-9F-3a-tourfix1"></script>
+    <script src="js/student-pin.js?v=2026.11.04-9F-3a-tourfix2.1"></script>
+    <script src="js/student-admin.js?v=2026.11.04-9F-3a-tourfix2.1"></script>
     <script src="js/student-class.js?v=2026.11.03-9F-3a-tourfix1"></script>
-    <script src="js/teacher-class.js?v=2026.11.03-9F-3a-tourfix1"></script>
+    <script src="js/teacher-class.js?v=2026.11.04-9F-3a-tourfix2.1"></script>
     <script src="js/student-tasks.js?v=2026.11.02-9F-3a"></script>
     <script src="js/teacher-tasks.js?v=2026.11.03-9F-3a-tourfix1"></script>
     <script src="js/rewards.js?v=2026.11.02-9F-3a"></script>
