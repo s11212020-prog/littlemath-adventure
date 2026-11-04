@@ -37,6 +37,15 @@
                 b.hidden = false;
             } catch (e) { /* 提醒條失敗不影響其他流程 */ }
         }
+        /* 使用者看得到的用詞：後端訊息裡的「PIN」一律顯示成「密碼」、「保護碼」顯示成「密碼重設碼」、學生帳號的「代碼」顯示成「帳號」（tourfix2.1）。
+           只換顯示用的文字欄位（message／note／compat_notice）；後端、API 動作與欄位名稱、錯誤代碼（例如 MUST_CHANGE_PIN）都不變。 */
+        function userWords(t) {
+            return String(t == null ? '' : t).replace(/代碼或[ \t]*PIN[ \t]*/g, '帳號或密碼').split('代碼或').join('帳號或').split('找不到這個代碼喔！請點擊「註冊新帳號」。').join('找不到這個帳號喔！請點擊「建立帳號」。').split('此代碼已經被使用囉').join('這個帳號已經被使用囉').split('代碼太長了').join('帳號太長了').split('代碼不能以').join('帳號不能以').split('你的代碼裡').join('你的帳號裡').split('保護碼').join('密碼重設碼').replace(/(?<![A-Za-z_])[ \t]*PIN[ \t]*(?![A-Za-z_])/g, '密碼');
+        }
+        function userWordsData(data) {
+            if (data && typeof data === 'object') ['message', 'note', 'compat_notice'].forEach(function (k) { if (typeof data[k] === 'string') data[k] = userWords(data[k]); });
+            return data;
+        }
         async function apiCall(payload) {
             if(!GAS_URL || !GAS_URL.startsWith("http")) return { status: 'offline' };
             /* 階段 9B-1：學生登入後若拿到 token，作答時自動附上（後端旗標關閉時會被忽略） */
@@ -49,7 +58,7 @@
                     if (data && data.status === 'error' && data.code === 'SERVICE_MAINTENANCE') { data = { status: 'error', code: 'SERVICE_MAINTENANCE', message: MAINT_TEXT }; if (payload.action !== 'login' && payload.action !== 'register') showMaintenanceNotice(); return data; }
                     if (data && data.code === 'SESSION_INVALID' && payload.action === 'submit_answer' && typeof SessionGuard !== 'undefined') SessionGuard.studentExpired();
                     if (data && data.code === 'MUST_CHANGE_PIN' && payload.action === 'submit_answer' && typeof StudentPin !== 'undefined') StudentPin.forceChange();
-                    return data;
+                    return userWordsData(data);
                 }
                 catch(e) { if (t === 1 || !canRetry) return { status: 'error', message: '連線失敗，請檢查網路後再試一次' }; await delay(800); }
             }

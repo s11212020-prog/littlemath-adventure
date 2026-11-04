@@ -353,7 +353,7 @@ const TeacherClass = (function () {
     /* ---------- 當面確認（只有管理員確認的教師；臨時密碼只顯示一次） ---------- */
     function identityPanel(s, action) {
         openPanel('重設學生密碼（當面確認）', [
-            para('請確認眼前的人就是這位學生本人。顯示名稱和稱號，任何知道登入代碼的人都看得到，不能當作證明；沒有可靠的依據時，請不要重設。', 'tp-note'),
+            para('請確認眼前的人就是這位學生本人。顯示名稱和稱號，任何知道帳號的人都看得到，不能當作證明；沒有可靠的依據時，請不要重設。', 'tp-note'),
             checkRow('tcp-confirm', '我已實際確認眼前的人就是這個帳號的本人'),
             el('fieldset', { class: 'ast-confirm' }, [el('legend', { text: '確認方式' }),
                 radioRow('tcp-method', 'know', '當面認得這位學生', 'tcp-m-know'), radioRow('tcp-method', 'guardian', '由其導師或家長當面確認', 'tcp-m-guardian'), radioRow('tcp-method', 'other', '其他（要寫明可靠的依據）', 'tcp-m-other'),

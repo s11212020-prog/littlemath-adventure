@@ -37,31 +37,31 @@ const AdminStudents = (function () {
         methodChanged: function () { const m = document.querySelector('input[name="ast-method"]:checked'); const w = $('ast-other-wrap'); if (w) w.hidden = !(m && m.value === 'other'); },
         closeSecret: function () { clearSecret(); },
         find: async function (keepMsg) {
-            if (keepMsg !== true) say('ast-msg', ''); const u = uname(); if (!u) { say('ast-msg', '請輸入學生的登入代碼。'); return; }
+            if (keepMsg !== true) say('ast-msg', ''); const u = uname(); if (!u) { say('ast-msg', '請輸入學生的帳號。'); return; }
             const r = await call({ action: 'admin_student_security', username: u }); if (!r) return;
             if (r.status !== 'success') { say('ast-info', ''); say('ast-msg', r.message || '查詢失敗'); return; }
-            const s = r.student, st = s.pin_status === 'none' ? '尚未設定 PIN（相容模式，只靠代碼登入）' : (s.pin_status === 'must_change' ? '使用臨時 PIN，學生登入後必須更改' : (s.pin_status === 'unknown' ? '狀態異常：帳號保護狀態無法確認，這個帳號暫時無法登入。請檢查憑證表該列（pin_status 欄位）後再處理' : '已啟用 PIN'));
+            const s = r.student, st = s.pin_status === 'none' ? '尚未設定密碼（相容模式，只靠帳號登入）' : (s.pin_status === 'must_change' ? '使用臨時密碼，學生登入後必須更改' : (s.pin_status === 'unknown' ? '狀態異常：帳號保護狀態無法確認，這個帳號暫時無法登入。請檢查憑證表該列（pin_status 欄位）後再處理' : '已啟用密碼'));
             let t = '顯示名稱：' + (s.nickname || '') + '　狀態：' + st + '。';
-            if (s.has_recovery_code) t += '學生已建立保護碼。';
+            if (s.has_recovery_code) t += '學生已建立密碼重設碼。';
             if (s.locked) t += '目前因輸錯太多次暫時鎖定。';
             if (s.needs_review) t += '已標記為「待處理」。';
             say('ast-info', t);
         },
         resetPin: async function () {
-            say('ast-msg', ''); clearSecret(); const u = uname(); if (!u) { say('ast-msg', '請輸入學生的登入代碼。'); return; }
-            if (!window.confirm('重設後，這位學生目前的密碼、所有登入和保護碼會立即失效。要繼續嗎？')) return;
+            say('ast-msg', ''); clearSecret(); const u = uname(); if (!u) { say('ast-msg', '請輸入學生的帳號。'); return; }
+            if (!window.confirm('重設後，這位學生目前的密碼、所有登入和密碼重設碼會立即失效。要繼續嗎？')) return;
             const r = await call(Object.assign({ action: 'admin_reset_student_pin', username: u }, methodPayload())); if (!r) return;
             if (r.status !== 'success') { say('ast-msg', r.message || '無法重設'); return; }
             showSecret('臨時密碼（只顯示這一次，24 小時內有效）', r.temp_pin, '學生登入後必須先更改。請當面交給學生。');
             resetForm(); await this.find(true);
         },
         clearReview: async function () {
-            say('ast-msg', ''); const u = uname(); if (!u) { say('ast-msg', '請輸入學生的登入代碼。'); return; }
+            say('ast-msg', ''); const u = uname(); if (!u) { say('ast-msg', '請輸入學生的帳號。'); return; }
             const r = await call({ action: 'admin_set_needs_review', username: u, value: false }); if (!r) return;
             say('ast-msg', r.status === 'success' ? '已清除「待處理」標記。' : (r.message || '無法清除')); await this.find(true);
         },
         realName: async function () {
-            say('ast-msg', ''); const u = uname(); if (!u) { say('ast-msg', '請輸入學生的登入代碼。'); return; }
+            say('ast-msg', ''); const u = uname(); if (!u) { say('ast-msg', '請輸入學生的帳號。'); return; }
             const name = $('ast-real') ? $('ast-real').value.trim() : '', reason = $('ast-reason') ? $('ast-reason').value.trim() : '';
             const r = await call({ action: 'admin_update_real_name', username: u, real_name: name, reason: reason }); if (!r) return;
             say('ast-msg', r.status === 'success' ? '已更正姓名，並寫入稽核紀錄。' : (r.message || '無法更正'));
@@ -79,7 +79,7 @@ const AdminStudents = (function () {
             const r = await call({ action: 'admin_list_audit', limit: 50 }); if (!r) return;
             if (r.status !== 'success') { say('ast-msg', r.message || '無法載入'); return; }
             say('ast-msg', '最近 ' + r.audit.length + ' 筆（共 ' + r.total + ' 筆）：');
-            const F = { pin_code_issued: '核發啟用碼', pin_code_revoked: '啟用碼作廢', pin_activated: '啟用 PIN', pin_reset: '重設 PIN', pin_recovery: '保護碼重設 PIN', real_name: '姓名', display_name: '顯示名稱', teacher_verified: '教師確認', class_member: '班級關係' };
+            const F = { pin_code_issued: '核發啟用碼', pin_code_revoked: '啟用碼作廢', pin_activated: '啟用密碼', pin_reset: '重設密碼', pin_recovery: '密碼重設碼重設密碼', real_name: '姓名', display_name: '顯示名稱', teacher_verified: '教師確認', class_member: '班級關係' };
             r.audit.forEach(function (a) { line(l, when(a.changed_at) + '　' + (F[a.field] || a.field) + '　' + a.changed_by_role + '　' + (a.old_value || '') + ' → ' + (a.new_value || '')); });
         },
         listTeacherAudit: async function (teacherId, loginId) {
@@ -88,7 +88,7 @@ const AdminStudents = (function () {
             if (r.status !== 'success') { say('atp-msg', r.message || '無法載入'); return; }
             const p = $('admin-students-panel'); if (p) { p.hidden = false; if (p.scrollIntoView) p.scrollIntoView({ block: 'nearest' }); }
             say('ast-msg', '教師「' + loginId + '」最近 ' + r.audit.length + ' 筆核發／確認紀錄（共 ' + r.total + ' 筆）：');
-            const F = { pin_code_issued: '核發啟用碼', pin_code_revoked: '啟用碼作廢', pin_activated: '啟用 PIN', pin_reset: '重設 PIN', real_name: '姓名', class_member: '班級關係', teacher_verified: '教師確認' };
+            const F = { pin_code_issued: '核發啟用碼', pin_code_revoked: '啟用碼作廢', pin_activated: '啟用密碼', pin_reset: '重設密碼', real_name: '姓名', class_member: '班級關係', teacher_verified: '教師確認' };
             r.audit.forEach(function (a) { line(l, when(a.changed_at) + '　' + (F[a.field] || a.field) + '　' + a.changed_by_role + '　' + (a.old_value || '') + ' → ' + (a.new_value || '')); });
         },
         setTeacherVerified: async function (teacherId, verified) {
