@@ -1,7 +1,7 @@
 /* 階段 9C：教師班級管理（建立班級、班級代碼、學生名單、轉班申請、移除學生、本名更正、匯出），
-   以及「管理員確認」教師的當面確認功能（核發啟用碼、重設 PIN、作廢）。
+   以及「管理員確認」教師的當面確認功能（重設學生密碼）。
    * 全部畫面由這支程式建立；後端傳來的文字一律用 textContent 寫入，不當成 HTML。
-   * 啟用碼與臨時 PIN 只顯示一次，離開畫面就清除；不寫入 localStorage／sessionStorage／Cookie。
+   * 臨時密碼只顯示一次，離開畫面就清除；不寫入 localStorage／sessionStorage／Cookie。
    * 教師看到的學生範圍完全由後端決定（visibleScope_）：這裡只顯示後端給的欄位，畫面沒有任何找出班外學生、或替學生入班的功能。
    * 學生的登入代碼與完整學號不會傳到這裡。 */
 const TeacherClass = (function () {
@@ -140,7 +140,7 @@ const TeacherClass = (function () {
         const r = await call({ action: 'list_transfer_requests' }, 'tcl-msg'); if (!r || r.status !== 'success') return;
         const reqs = r.requests || []; if (!reqs.length) return;
         box.appendChild(el('h2', { class: 'tp-hello', text: '轉班申請（' + reqs.length + '）' }));
-        box.appendChild(para('這些學生想從別的班轉到你的班。核准之前，你只看得到暱稱、稱號和帳號識別，看不到本名、星星數與學習資料。', 'tp-hint'));
+        box.appendChild(para('這些學生想從別的班轉到你的班。核准之前，你只看得到顯示名稱、稱號和帳號識別，看不到本名、星星數與學習資料。', 'tp-hint'));
         reqs.forEach(function (q) {
             const s = q.student;
             const row = el('div', { class: 'tc-req', 'data-request-id': q.request_id }, [
@@ -200,7 +200,7 @@ const TeacherClass = (function () {
         }
         if (tab === 'left') wrap.appendChild(para(r.left_note || '', 'tp-hint'));
         const table = el('table', { class: 'admin-table compact', 'data-tab': tab });
-        const head = el('tr'); (tab === 'left' ? ['狀態', '加入時間', '離班時間', '原因'] : ['本名', '暱稱', '帳號識別', '稱號', '星星', st.tab === 'students' ? '最後登入' : '狀態', '操作']).forEach(function (h) { head.appendChild(el('th', { text: h })); });
+        const head = el('tr'); (tab === 'left' ? ['狀態', '加入時間', '離班時間', '原因'] : ['本名', '顯示名稱', '帳號識別', '稱號', '星星', st.tab === 'students' ? '最後登入' : '狀態', '操作']).forEach(function (h) { head.appendChild(el('th', { text: h })); });
         table.appendChild(el('thead', null, [head]));
         const body = el('tbody');
         rows.forEach(function (s) {
@@ -211,25 +211,20 @@ const TeacherClass = (function () {
             } else {
                 if (s.scope === 'full') { td(tr, s.real_name || '（尚未填寫）', s.real_name ? '' : 'tc-missing'); } else { td(tr, '同意分享後才顯示', 'tc-missing'); }
                 td(tr, s.nickname); td(tr, s.id_last4); td(tr, s.title || ''); td(tr, s.scope === 'full' ? s.total_stars + ' / 54' : '同意分享後才顯示', s.scope === 'full' ? '' : 'tc-missing');
-                td(tr, s.status === 'active' ? fmt(s.last_login_at) : (s.status === 'pending_identity' ? (s.has_code ? '已核發啟用碼（' + fmt(s.code_expires_at) + ' 前）' : '等待當面確認') : (s.status === 'pending_share' ? '身分已確認（' + fmt(s.identity_confirmed_at) + '），等學生同意分享' : '等待你核准')));
+                td(tr, s.status === 'active' ? fmt(s.last_login_at) : (s.status === 'pending_identity' ? '等待當面確認' : (s.status === 'pending_share' ? '身分已確認（' + fmt(s.identity_confirmed_at) + '），等學生同意分享' : '等待你核准')));
                 const act = el('td'); const box = el('div', { class: 'atp-act' });
                 if (s.status === 'active') {
                     box.appendChild(vbtn('查看', function () { showDetail(s); }, 'tcc-view-' + s.member_id));
                     box.appendChild(vbtn('更正本名', function () { namePanel(s); }, 'tcc-name-' + s.member_id));
                     if (st.verified) {
-                        if (s.pin === 'none') box.appendChild(vbtn('當面確認並核發啟用碼', function () { identityPanel(s, 'issue_activation_code'); }, 'tcc-issue-' + s.member_id));
-                        if (s.pin === 'set') box.appendChild(vbtn('重設 PIN', function () { identityPanel(s, 'reset_student_pin'); }, 'tcc-reset-' + s.member_id));
-                        if (s.has_code) box.appendChild(vbtn('作廢啟用碼', function () { revoke(s); }, 'tcc-revoke-' + s.member_id));
+                        if (s.pin === 'set') box.appendChild(vbtn('重設學生密碼', function () { identityPanel(s, 'reset_student_pin'); }, 'tcc-reset-' + s.member_id));
                     }
                     box.appendChild(vbtn('移除', function () { removePanel(s); }, 'tcc-remove-' + s.member_id));
                 } else if (s.status === 'pending_identity') {
-                    if (st.verified) {
-                        box.appendChild(vbtn('當面確認並核發啟用碼', function () { identityPanel(s, 'approve_pending_identity'); }, 'tcc-approve-' + s.member_id));
-                        if (s.has_code) box.appendChild(vbtn('作廢啟用碼', function () { revoke(s); }, 'tcc-revoke-' + s.member_id));
-                    } else box.appendChild(para('需要由「管理員確認」的老師或管理員當面確認身分。', 'tp-hint'));
+                    box.appendChild(para('這位學生正在等待當面確認身分。', 'tp-hint'));
                     box.appendChild(vbtn('移除', function () { removePanel(s); }, 'tcc-remove-' + s.member_id));
                 } else if (s.status === 'pending_share') {
-                    box.appendChild(para('學生同意前，你只看得到暱稱、稱號與帳號識別，看不到本名、星星數與學習資料。', 'tp-hint'));
+                    box.appendChild(para('學生同意前，你只看得到顯示名稱、稱號與帳號識別，看不到本名、星星數與學習資料。', 'tp-hint'));
                     box.appendChild(vbtn('移除', function () { removePanel(s); }, 'tcc-remove-' + s.member_id));
                 } else if (s.status === 'pending_transfer') {
                     box.appendChild(para('請到「我的班級」頁面的轉班申請處理。', 'tp-hint'));
@@ -355,16 +350,15 @@ const TeacherClass = (function () {
         await openClass(st.cls.class_id, true); say('tcc-msg', '已移除。');
     }
 
-    /* ---------- 當面確認（只有管理員確認的教師；啟用碼／臨時 PIN 只顯示一次） ---------- */
+    /* ---------- 當面確認（只有管理員確認的教師；臨時密碼只顯示一次） ---------- */
     function identityPanel(s, action) {
-        const isReset = action === 'reset_student_pin';
-        openPanel(isReset ? '重設 PIN（當面確認）' : '當面確認並核發啟用碼', [
-            para('請確認眼前的人就是這位學生本人。暱稱和稱號，任何知道登入代碼的人都看得到，不能當作證明；沒有可靠的依據時，請不要核發。', 'tp-note'),
+        openPanel('重設學生密碼（當面確認）', [
+            para('請確認眼前的人就是這位學生本人。顯示名稱和稱號，任何知道帳號的人都看得到，不能當作證明；沒有可靠的依據時，請不要重設。', 'tp-note'),
             checkRow('tcp-confirm', '我已實際確認眼前的人就是這個帳號的本人'),
             el('fieldset', { class: 'ast-confirm' }, [el('legend', { text: '確認方式' }),
                 radioRow('tcp-method', 'know', '當面認得這位學生', 'tcp-m-know'), radioRow('tcp-method', 'guardian', '由其導師或家長當面確認', 'tcp-m-guardian'), radioRow('tcp-method', 'other', '其他（要寫明可靠的依據）', 'tcp-m-other'),
-                el('div', { id: 'tcp-other-wrap', hidden: '' }, [inputRow('tcp-other', '說明（4～30 個字，不能只寫「比對暱稱」）', { maxlength: 30 })])]),
-            el('div', { class: 'atp-act' }, [btn(isReset ? '重設並顯示臨時 PIN' : '核發啟用碼', 'ds-btn--gold', function () { doIdentity(s, action); }, 'tcp-go'), btn('取消', 'ds-btn--ghost', function () { closePanel(); }, 'tcp-no')])
+                el('div', { id: 'tcp-other-wrap', hidden: '' }, [inputRow('tcp-other', '說明（4～30 個字，不能只寫「比對顯示名稱」）', { maxlength: 30 })])]),
+            el('div', { class: 'atp-act' }, [btn('重設並顯示臨時密碼', 'ds-btn--gold', function () { doIdentity(s, action); }, 'tcp-go'), btn('取消', 'ds-btn--ghost', function () { closePanel(); }, 'tcp-no')])
         ]);
         document.querySelectorAll('input[name="tcp-method"]').forEach(function (r) { r.addEventListener('change', function () { const m = document.querySelector('input[name="tcp-method"]:checked'); $('tcp-other-wrap').hidden = !(m && m.value === 'other'); }); });
     }
@@ -374,19 +368,13 @@ const TeacherClass = (function () {
         if (payload.method === 'other') payload.method_other = val('tcp-other').trim();
         const r = await call(payload, 'tcp-msg'); if (!r) return;
         if (r.status !== 'success') { say('tcp-msg', r.message || '無法完成。'); return; }
-        const isReset = action === 'reset_student_pin', secret = isReset ? r.temp_pin : r.activation_code;
-        openPanel(isReset ? '臨時 PIN（只顯示這一次）' : '啟用碼（只顯示這一次）', [
+        const secret = r.temp_pin;
+        openPanel('臨時密碼（只顯示這一次）', [
             el('div', { class: 'atp-temp sp-code-box', role: 'alert' }, [el('code', { id: 'tcp-secret', class: 'sp-code', text: secret })]),
-            para((isReset ? '24 小時內有效，學生登入後必須先更改。' : '3 天內有效，輸錯 5 次作廢；學生啟用後就會正式加入你的班級。') + '請當面交給學生，不要貼在群組或公開的地方。今天還能再核發 ' + r.remaining_today + ' 組。', 'tp-note'),
+            para('24 小時內有效，學生登入後必須先更改。請當面交給學生，不要貼在群組或公開的地方。今天還能再重設 ' + r.remaining_today + ' 組。', 'tp-note'),
             btn('我已交給學生，關閉', 'ds-btn--gold', function () { closePanel(); openClass(st.cls.class_id, true); }, 'tcp-done')
         ]);
     }
-    async function revoke(s) {
-        const r = await call({ action: 'revoke_activation_code', class_id: st.cls.class_id, member_id: s.member_id }, 'tcc-msg'); if (!r) return;
-        if (r.status !== 'success') { say('tcc-msg', r.message || '無法作廢。'); return; }
-        await openClass(st.cls.class_id, true); say('tcc-msg', r.revoked ? '已作廢這組啟用碼。' : '這位學生目前沒有你核發的啟用碼。');
-    }
-
     /* ---------- 匯出 CSV（後端已依可視範圍篩選、並處理公式注入） ---------- */
     function csvCell(v) { const s = String(v === undefined || v === null ? '' : v); return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
     async function doExport() {
