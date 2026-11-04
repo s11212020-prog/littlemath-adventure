@@ -1,25 +1,23 @@
 /* 學生登入／註冊／選角色（階段 9B-2：可選用 PIN；沒有 PIN 的舊流程維持原樣） */
         async function doStudentAuth(actionType) {
-            const username = document.getElementById('student-username').value.trim(); if(!username) return alert("請輸入代碼！");
-            if (Loading.busy) return;   /* 正在同步時不重複送出（Enter 或連點） */
-            /* 後端支援 PIN 時，「註冊新帳號」改走有 PIN 的註冊畫面；後端沒升級或示範模式則維持原本流程 */
-            /* 註冊前先確認後端狀態：PIN 功能正常→走有 PIN 的註冊；舊後端／尚未升級→沿用原流程；
-               帳號保護設定壞掉或無法確認→不可偷偷改成「沒有 PIN 的註冊」，顯示說明即可 */
-            if (actionType === 'register' && typeof StudentPin !== 'undefined') {
-                let gate = StudentPin.registerGate();
-                if (gate && typeof gate.then === 'function') { Loading.show(); try { gate = await gate; } finally { Loading.hide(); } }   /* 還要問後端時顯示救生圈；Loading.busy 同時擋住重複點擊 */
-                if (!gate.ok) { alert(gate.message); return; }
-                if (gate.mode === 'pin') { StudentPin.openRegister(username); return; }
-            }
+            const usernameEl = document.getElementById('student-username');
             const pinEl = document.getElementById('student-pin');
-            const pinWrap = document.getElementById('student-pin-wrap');
-            const pin = (actionType === 'login' && pinEl && pinWrap && !pinWrap.hidden) ? pinEl.value.trim() : '';
-            const payload = { action: actionType, username: username };
-            if (pin) payload.pin = pin;
+            const username = usernameEl ? usernameEl.value.trim() : '';
+            /* 「建立帳號」不需要先填任何東西：直接打開獨立的註冊畫面（帳號、顯示名稱、設定密碼、再次輸入密碼）。
+               後端狀態與安全檢查在註冊畫面按下「建立帳號」送出時才做，不會擋住畫面開啟 */
+            if (actionType === 'register') {
+                if (Loading.busy) return;
+                if (typeof StudentPin !== 'undefined') StudentPin.openRegister(username);
+                return;
+            }
+            const pin = pinEl ? pinEl.value.trim() : '';
+            if (!username || !pin) { alert('請輸入帳號和密碼'); return; }
+            if (Loading.busy) return;   /* 正在同步時不重複送出（Enter 或連點） */
+            const payload = { action: 'login', username: username, pin: pin };
             Loading.show(); let res;
             try { res = await apiCall(payload); }
             catch (e) { console.error(e); res = { status: 'error', message: '連線失敗，請檢查網路後再試一次' }; }
-            finally { Loading.hide(); if (pinEl) pinEl.value = ''; }   /* 成功、失敗、例外都會關閉救生圈；PIN 用完立刻清空 */
+            finally { Loading.hide(); if (pinEl) pinEl.value = ''; }   /* 成功、失敗、例外都會關閉救生圈；密碼用完立刻清空 */
             if (res.status === 'error' && res.message) { alert(res.message); return; }
             if (res.status !== 'success' && res.status !== 'offline') { alert('登入失敗，請稍後再試'); return; }
             finishStudentLogin(res, username);
