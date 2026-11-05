@@ -3,7 +3,10 @@
    * 全部畫面由這支程式建立；後端傳來的文字一律用 textContent 寫入，不當成 HTML。
    * 這裡不保存任何資料（沒有 localStorage／sessionStorage／Cookie）；班級代碼只在輸入框裡，送出後清空。
    * 「確認帳號身分」和「同意分享資料」是兩件事：老師當面確認身分、設定 PIN 只會保護帳號；老師要等學生在這裡看完完整說明、自己按「同意分享」之後，才看得到學習資料。
-   * 後端沒有開班級功能（FLAG_CLASSES off）、舊後端、示範模式：入口按鈕不出現，其他功能完全不受影響。 */
+   * 後端確認沒有開班級功能（FLAG_CLASSES off）、舊後端（UNKNOWN_ACTION）、示範模式：入口按鈕不出現，其他功能完全不受影響。
+   * 階段 10 補充：登入進海圖後，入口「立刻」出現；班級狀態還在讀取時，按鈕仍在、點進去立刻看到救生圈與「班級資料載入中……」；
+   *   只有「已確認功能關閉」才隱藏入口；讀取失敗或逾時顯示「重新載入」，不影響自己遊玩六島。
+   *   每一次讀取都綁定「登入世代＋登入憑證」，登出或換帳號後回來的舊回應一律丟棄；同一時間只會有一個讀取請求。 */
 const StudentClass = (function () {
     const $ = function (id) { return document.getElementById(id); };
     const online = function () { return typeof GAS_URL === 'string' && GAS_URL.indexOf('http') === 0; };
@@ -11,7 +14,10 @@ const StudentClass = (function () {
     const CONSENT_TEXT = '加入班級後，該班教師可以查看你在本學習工具中的既有與後續學習進度、作答情形及任務完成狀態。你離開班級之後，教師仍會保留你在班期間的任務結果（只有暱稱和當時的任務完成狀態，不含本名），但看不到你離開之後的任何新資料。';
     const EXIT_NOTE = '之後你隨時可以在「我的班級」按「離開班級」，老師就看不到你之後的學習資料，只保留你在班期間的任務結果（暱稱和當時的完成狀態，不含本名）；你的進度、星星、物品和裝扮都會留給你自己。';
     const SELF_PLAY = '不加入班級也沒關係，你可以照常自己冒險，星星、獎勵和裝扮都不受影響。';
-    const st = { info: null, preview: null, mode: '', busy: false, enabled: false, code: '', prompted: false, watch: null };
+    /* phase：idle＝沒有登入（或示範模式）、loading＝讀取中、ready＝已取得、off＝後端確認沒開、error＝讀取失敗或逾時 */
+    const st = { info: null, preview: null, mode: '', busy: false, enabled: false, code: '', prompted: false, watch: null, phase: 'idle', gen: 0, inflight: null, lastErr: '' };
+    const LOAD_TIMEOUT_MS = 20000;
+    const token = function () { return (typeof AuthSession !== 'undefined' && AuthSession.student && AuthSession.student.token) ? AuthSession.student.token : ''; };
 
     function el(tag, props, kids) {
         const e = document.createElement(tag);
@@ -24,7 +30,9 @@ const StudentClass = (function () {
         (kids || []).forEach(function (c) { if (c) e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c); });
         return e;
     }
-    function say(id, t) { const e = $(id); if (e) e.textContent = t || ''; }
+    /* 學生看得到的文字一律用「顯示名稱」：後端／備援同意文字裡若還寫「暱稱」，只在顯示時換字（後端、API、欄位名稱 nickname、同意文字版本都不變） */
+    function shown(t) { return String(t == null ? '' : t).split('暱稱').join('顯示名稱'); }
+    function say(id, t) { const e = $(id); if (e) e.textContent = shown(t); }
     function val(id) { const e = $(id); return e ? e.value : ''; }
     function btn(label, cls, fn, id) { const b = el('button', { type: 'button', class: 'ds-btn ' + cls + ' ds-btn--block', text: label }); if (id) b.id = id; b.addEventListener('click', fn); return b; }
     function para(text, cls) { return el('p', { class: cls || 'tp-hint', text: text }); }
@@ -81,8 +89,7 @@ const StudentClass = (function () {
                     el('p', { class: 'tp-hint', text: '填了之後，你自己就不能再改；如果寫錯了，請找老師更正。不填也可以加入。' })
                 ]),
                 checkRow('scj-agree', '我看完上面的說明了，同意加入'),
-                btn('確認加入', 'ds-btn--gold', function () { doJoin(this); }, 'scj-confirm'),
-                btn('了解如何保護我的帳號', 'ds-btn--sea', function () { if (typeof StudentPin !== 'undefined') StudentPin.openProtect('screen-sc-join'); }, 'scj-protect')
+                btn('確認加入', 'ds-btn--gold', function () { doJoin(this); }, 'scj-confirm')
             ]),
             btn('稍後再說，自己冒險', 'ds-btn--ghost en-back', function () { backToMap(); }, 'scj-later')
         ]);
@@ -99,27 +106,63 @@ const StudentClass = (function () {
     }
 
     /* ---------- 入口按鈕（海圖上的「加入班級（選填）」） ---------- */
+    /* 入口只在「沒登入／示範模式」或「後端已確認功能沒開」時隱藏；讀取中與讀取失敗都保留，讓學生看得到、點得到 */
     function syncButton() {
         const b = $('btn-class'); if (!b) return;
-        const logged = online() && AuthSession.student && AuthSession.student.token && st.enabled;
-        b.hidden = !logged;
-        const full = $('btn-class-full'), inClass = st.info && st.info.membership;
+        const show = online() && !!token() && (st.phase === 'loading' || st.phase === 'ready' || st.phase === 'error');
+        b.hidden = !show;
+        /* 不用 aria-busy：design system 的 .ds-btn[aria-busy] 會把按鈕設成不可點（pointer-events:none），入口必須在讀取中就點得到 */
+        if (st.phase === 'loading') b.setAttribute('data-load', 'loading'); else b.removeAttribute('data-load');
+        const full = $('btn-class-full'), inClass = st.phase === 'ready' && st.info && st.info.membership;
         const label = !inClass ? '加入班級（選填）' : (st.info.membership.status === 'pending_share' ? '我的班級（等你決定）' : '我的班級');
-        if (full) full.textContent = label;
+        if (full && full.textContent !== label) full.textContent = label;
         b.setAttribute('aria-label', label);
     }
-    /* 登入後呼叫：問後端有沒有開班級功能；任何失敗都只是不顯示入口，不影響遊玩 */
+    /* 沿用現有救生圈（和全頁讀取同一個圖示）；找不到時只顯示文字 */
+    function lifeRing(text) {
+        const src = document.querySelector('#loading .lf'); const w = el('div', { class: 'qz-loading sc-loading', role: 'status', id: 'scc-loading' });
+        if (src) { const c = src.cloneNode(true); c.classList.add('qz-lf'); w.appendChild(c); }
+        w.appendChild(el('p', { class: 'qz-loading__t', text: text })); return w;
+    }
+    function reasonText(r) {
+        if (r && r.code === 'TIMEOUT') return '連線逾時，班級資料還沒有讀到。';
+        if (r && r.message && !/^未知/.test(r.message)) return String(r.message);
+        return '班級資料暫時讀不到。';
+    }
+    /* 讀取班級狀態：同一時間只有一個請求（登入後的背景讀取與學生點入口共用）；回來時若已登出／換帳號就丟棄 */
+    function fetchInfo(force) {
+        const tok = token(); if (!tok) return Promise.resolve({ stale: true });
+        if (!force && st.inflight && st.inflight.gen === st.gen && st.inflight.tok === tok) return st.inflight.p;
+        const gen = st.gen, mine = function () { return gen === st.gen && token() === tok; };
+        if (st.phase !== 'ready') { st.phase = 'loading'; syncButton(); }
+        const p = (async function () {
+            let r, timer;
+            const guard = new Promise(function (resolve) { timer = setTimeout(function () { resolve({ status: 'error', code: 'TIMEOUT', message: '連線逾時，請檢查網路後再試一次' }); }, LOAD_TIMEOUT_MS); });
+            try { r = await Promise.race([apiCall({ action: 'get_student_class' }), guard]); } catch (e) { console.error(e); r = { status: 'error', code: 'NETWORK', message: '連線失敗，請檢查網路後再試一次' }; }
+            clearTimeout(timer);
+            if (!mine()) return { stale: true };
+            if (r && r.code === 'SESSION_INVALID') { if (typeof SessionGuard !== 'undefined') SessionGuard.studentExpired(); return { stale: true }; }
+            if (r && r.status === 'success' && r.enabled === true) { st.info = r; st.enabled = true; st.phase = 'ready'; syncButton(); return { ok: true, info: r }; }
+            /* 只有後端明確說「沒開」（或舊後端不認得這個動作）才算確認關閉 */
+            if ((r && r.status === 'success') || (r && r.code === 'UNKNOWN_ACTION')) { st.info = null; st.enabled = false; st.phase = 'off'; syncButton(); return { off: true }; }
+            st.enabled = false; if (st.phase !== 'ready') st.phase = 'error'; syncButton();
+            st.lastErr = reasonText(r);
+            return { err: true, message: st.lastErr };
+        })();
+        const rec = { gen: gen, tok: tok, p: p }; st.inflight = rec;
+        p.then(function () { if (st.inflight === rec) st.inflight = null; });
+        return p;
+    }
+    /* 登入後呼叫：入口先出現（讀取中），再問後端班級狀態；任何失敗都不影響遊玩 */
     async function afterLogin(res) {
-        st.info = null; st.enabled = false; syncButton();
-        if (!online() || !AuthSession.student || !AuthSession.student.token) return;
-        if (typeof StudentPin !== 'undefined' && StudentPin.classesEnabled && !StudentPin.classesEnabled()) return;
-        try {
-            const r = await apiCall({ action: 'get_student_class' });
-            if (r && r.status === 'success' && r.enabled === true) { st.enabled = true; st.info = r; }
-        } catch (e) { /* 入口不出現而已 */ }
+        st.gen++; st.inflight = null; st.lastErr = ''; st.info = null; st.enabled = false; st.phase = 'idle';
+        if (!online() || !token()) { syncButton(); return; }
+        if (typeof StudentPin !== 'undefined' && StudentPin.classesEnabled && !StudentPin.classesEnabled()) { st.phase = 'off'; syncButton(); return; }
+        st.phase = 'loading'; syncButton();
+        const o = await fetchInfo(true); if (!o || o.stale) return;
         syncButton();
-        warmTasks();
-        /* 剛用啟用碼完成 PIN：若班級正等著學生決定要不要分享，直接帶到說明畫面（每次登入最多一次；可按「之後再決定」離開） */
+        if (o.ok) warmTasks();
+        /* 剛完成密碼設定：若班級正等著學生決定要不要分享，直接帶到說明畫面（每次登入最多一次；可按「之後再決定」離開） */
         const justActivated = !!(res && res.notice && res.notice.type === 'activated');
         if (justActivated && !st.prompted && st.info && st.info.membership && st.info.membership.status === 'pending_share') { st.prompted = true; promptWhenOnMap(); }
     }
@@ -136,17 +179,30 @@ const StudentClass = (function () {
         st.watch.observe(map, { attributes: true, attributeFilter: ['class'] });
     }
     function stopWatch() { if (st.watch) { try { st.watch.disconnect(); } catch (e) { /* ignore */ } st.watch = null; } }
-    async function openEntry() {
-        build(); renderClass(null); open('screen-sc-class');
-        const r = await call({ action: 'get_student_class' }); if (!r) return;
-        if (r.status === 'success' && r.enabled) { st.info = r; st.enabled = true; syncButton(); renderClass(r); warmTasks(); }
-        else say('scc-msg', r.status === 'success' ? '班級功能目前還沒有開放。' : (r.message || '無法載入。'));
+    /* 點入口：立刻進班級畫面並顯示讀取中；結果回來後依實際狀態畫出（force＝做完動作後一定要重讀） */
+    async function openEntry(force) {
+        if (!token()) return;
+        build(); open('screen-sc-class');
+        /* 上一次讀取失敗、現在也沒有讀取在進行：直接顯示失敗與「重新載入」，由學生決定何時重試（不自動重送、不轉圈） */
+        if (force !== true && st.phase === 'error' && !st.inflight) { renderLoadError(st.lastErr); return; }
+        renderClass(null);
+        const gen = st.gen, tok = token();
+        const o = await fetchInfo(force === true); if (!o || o.stale || gen !== st.gen || token() !== tok) return;
+        if (o.ok) { renderClass(o.info); warmTasks(); }
+        else if (o.off) { const body = $('scc-body'); if (body) body.textContent = ''; say('scc-msg', '班級功能目前還沒有開放。'); }
+        else renderLoadError(o.message);
+    }
+    function renderLoadError(why) {
+        const body = $('scc-body'); if (!body) return; body.textContent = ''; say('scc-msg', '');
+        body.appendChild(el('p', { class: 'tp-hello', text: why || '班級資料暫時讀不到。' }));
+        body.appendChild(para('這不影響你自己冒險，六座島都可以照常玩。你可以先回到海圖，稍後再按「重新載入」。', 'tp-note'));
+        body.appendChild(btn('重新載入', 'ds-btn--gold', function () { openEntry(true); }, 'scc-reload'));
     }
 
     /* ---------- 我的班級 ---------- */
     function renderClass(info) {
         const body = $('scc-body'); if (!body) return; body.textContent = ''; say('scc-msg', '');
-        if (!info) { body.appendChild(para('載入中…')); return; }
+        if (!info) { body.appendChild(lifeRing('班級資料載入中……')); return; }
         const m = info.membership, pt = info.pending_transfer;
         if (m && m.status === 'active') {
             body.appendChild(para('你在：' + m.class_name + (m.archived ? '（老師已封存這個班級）' : ''), 'tp-hello'));
@@ -156,11 +212,11 @@ const StudentClass = (function () {
         } else if (m && m.status === 'pending_identity') {
             body.appendChild(para('已送出申請：' + m.class_name, 'tp-hello'));
             body.appendChild(para('申請時間：' + fmt(m.applied_at), 'tp-hint'));
-            body.appendChild(para('等待 ' + (m.teacher_name || '老師') + ' 當面確認你是本人。確認之後，老師會給你一組啟用碼，你用它設定 PIN 來保護帳號。這時老師還是只看得到你的暱稱、稱號和帳號識別後四碼，看不到你的本名、星星數和學習資料；之後系統會再讓你看完說明，由你自己決定要不要分享。', 'tp-note'));
+            body.appendChild(para('等待 ' + (m.teacher_name || '老師') + ' 當面確認你是本人。這時老師還是只看得到你的顯示名稱、稱號和帳號識別後四碼，看不到你的本名、星星數和學習資料；之後系統會再讓你看完說明，由你自己決定要不要分享。', 'tp-note'));
             if (info.scope === 'full') {
-                body.appendChild(para('你的帳號已經有 PIN 保護。想加入的話，再輸入一次班級代碼，看完完整說明後由你自己決定要不要分享。', 'tp-hint'));
+                body.appendChild(para('你的帳號已經有密碼保護。想加入的話，再輸入一次班級代碼，看完完整說明後由你自己決定要不要分享。', 'tp-hint'));
                 body.appendChild(btn('輸入班級代碼，看說明', 'ds-btn--gold', function () { openJoin(); }, 'scc-confirm-join'));
-            } else body.appendChild(btn('我有啟用碼', 'ds-btn--gold', function () { if (typeof StudentPin !== 'undefined') StudentPin.openActivate('screen-sc-class'); }, 'scc-activate'));
+            }
         } else if (m && m.status === 'pending_share') {
             renderShare(body, info, m);
         } else {
@@ -196,19 +252,19 @@ const StudentClass = (function () {
     /* 身分已確認、等學生決定要不要分享：完整說明（班級、老師、分享範圍、退出方式）＋三個選項（同意／之後再決定／不分享） */
     function renderShare(body, info, m) {
         const sh = info.share || {};
-        body.appendChild(para('老師已確認你的身分，PIN 也設定好了', 'tp-hello'));
+        body.appendChild(para('老師已確認你的身分，密碼也設定好了', 'tp-hello'));
         body.appendChild(para('現在要不要把學習資料分享給老師，由你決定。', 'tp-note'));
         body.appendChild(para('班級：' + m.class_name, 'tp-hello'));
         body.appendChild(para('老師：' + (m.teacher_name || '') + (m.school_name ? '　學校：' + m.school_name : '')));
         body.appendChild(para('申請時間：' + (fmt(m.applied_at) || '（無）') + '　身分確認時間：' + (fmt(m.identity_confirmed_at) || '（無）') + '　同意分享：尚未', 'tp-hint'));
         body.appendChild(para('分享的範圍', 'tp-hello'));
-        body.appendChild(el('blockquote', { id: 'scc-share-text', class: 'tp-note sc-consent', text: sh.consent_text || CONSENT_TEXT }));
-        body.appendChild(para('現在老師只看得到你的暱稱、稱號和帳號識別後四碼，看不到你的本名、星星數和學習資料。' + (sh.exit_note || EXIT_NOTE), 'tp-hint'));
+        body.appendChild(el('blockquote', { id: 'scc-share-text', class: 'tp-note sc-consent', text: shown(sh.consent_text || CONSENT_TEXT) }));
+        body.appendChild(para('現在老師只看得到你的顯示名稱、稱號和帳號識別後四碼，看不到你的本名、星星數和學習資料。' + shown(sh.exit_note || EXIT_NOTE), 'tp-hint'));
         if (!info.has_real_name) {
             body.appendChild(el('div', { class: 'ds-field' }, [
                 el('label', { class: 'ds-label', for: 'scc-real', text: '你的本名（選填，只能填一次；老師用來認人）' }),
                 el('input', { type: 'text', id: 'scc-real', class: 'ds-input', maxlength: '20', autocomplete: 'off', spellcheck: 'false', placeholder: '2～20 個字' }),
-                el('p', { class: 'tp-hint', text: '不填也可以分享；老師會用暱稱和帳號識別來認你。' })
+                el('p', { class: 'tp-hint', text: '不填也可以分享；老師會用顯示名稱和帳號識別來認你。' })
             ]));
         }
         body.appendChild(checkRow('scc-share-agree', '我看完上面的說明了，同意分享學習資料給這位老師'));
@@ -223,25 +279,25 @@ const StudentClass = (function () {
         if (re && re.value.trim()) { const real = re.value.trim(); if (real.length < 2 || real.length > 20) { say('scc-msg', '本名要 2～20 個字，或不填。'); return; } payload.real_name = real; }
         const r = await call(payload, b); if (!r) return;
         if (r.status !== 'success') { say('scc-msg', r.message || '無法完成，請稍後再試。'); return; }
-        await openEntry(); say('scc-msg', '已同意分享，你已加入「' + (r.class_name || '') + '」。');
+        await openEntry(true); say('scc-msg', '已同意分享，你已加入「' + (r.class_name || '') + '」。');
     }
     async function doDecline(b) {
         say('scc-msg', '');
         const r = await call({ action: 'leave_class', confirm: true }, b); if (!r) return;
         if (r.status !== 'success') { say('scc-msg', r.message || '無法完成，請稍後再試。'); return; }
-        await openEntry(); say('scc-msg', '好的，沒有分享任何資料給老師。你的 PIN 和冒險都還在，可以繼續玩。');
+        await openEntry(true); say('scc-msg', '好的，沒有分享任何資料給老師。你的密碼和冒險都還在，可以繼續玩。');
     }
     async function doLeave(b) {
         const ok = $('scc-leave-ok'); say('scc-msg', '');
         if (!ok || !ok.checked) { say('scc-msg', '請先勾選確認。'); return; }
         const r = await call({ action: 'leave_class', confirm: true }, b); if (!r) return;
         if (r.status !== 'success') { say('scc-msg', r.message || '無法離開，請稍後再試。'); return; }
-        await openEntry(); say('scc-msg', r.note || '已離開班級。');
+        await openEntry(true); say('scc-msg', r.note || '已離開班級。');
     }
     async function doCancelTransfer(b) {
         const r = await call({ action: 'cancel_class_transfer' }, b); if (!r) return;
         if (r.status !== 'success') { say('scc-msg', r.message || '無法取消。'); return; }
-        await openEntry(); say('scc-msg', '已取消轉班申請，你仍在原本的班級。');
+        await openEntry(true); say('scc-msg', '已取消轉班申請，你仍在原本的班級。');
     }
 
     /* ---------- 加入／轉班 ---------- */
@@ -269,7 +325,6 @@ const StudentClass = (function () {
         const cb = $('scj-agree'); cb.checked = false;
         const lab = cb.parentNode.querySelector('span'); if (lab) lab.textContent = r.mode === 'apply' ? '我明白了，送出申請' : (r.mode === 'transfer' ? '我看完上面的說明了，同意申請轉班' : '我看完上面的說明了，同意加入');
         const c = $('scj-confirm'); c.hidden = !act; c.textContent = r.mode === 'apply' ? '送出申請' : (r.mode === 'transfer' ? '送出轉班申請' : '確認加入');
-        $('scj-protect').hidden = !needPin;
     }
     async function doJoin(b) {
         say('scj-msg', '');
@@ -283,14 +338,14 @@ const StudentClass = (function () {
         const r = await call(payload, b); if (!r) return;
         if (r.status !== 'success') { say('scj-msg', r.message || '無法完成，請稍後再試。'); return; }
         clearJoin();
-        await openEntry();
+        await openEntry(true);
         say('scc-msg', mode === 'transfer' ? '已送出轉班申請，等老師確認。' : (mode === 'apply' ? '已送出申請，請等老師當面確認你是本人。' : '已加入班級。'));
     }
 
     function reset() {
-        st.info = null; st.preview = null; st.mode = ''; st.enabled = false; st.busy = false; st.code = ''; st.prompted = false; stopWatch();
+        st.gen++; st.inflight = null; st.lastErr = ''; st.phase = 'idle'; st.info = null; st.preview = null; st.mode = ''; st.enabled = false; st.busy = false; st.code = ''; st.prompted = false; stopWatch();
         ['scj-code', 'scj-real'].forEach(function (id) { const e = $(id); if (e) e.value = ''; });
-        const b = $('btn-class'); if (b) b.hidden = true;
+        const b = $('btn-class'); if (b) { b.hidden = true; b.removeAttribute('data-load'); }
         const d = $('scj-detail'); if (d) d.hidden = true;
         const body = $('scc-body'); if (body) body.textContent = '';
     }

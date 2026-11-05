@@ -46,6 +46,7 @@ const TeacherPortal = (function () {
         say('th-hello', '歡迎，' + (t.display_name || '') + '！');
         say('th-school', t.school_name ? ('學校：' + t.school_name) : '');
         switchScreen('screen-teacher-home');
+        if (typeof TeacherQuiz !== 'undefined') TeacherQuiz.onHome();   /* 階段 10：後端有開老師測驗才顯示出題入口 */
     }
 
     function afterAuth(res) {
@@ -108,6 +109,7 @@ const TeacherPortal = (function () {
             clear(['tr-password', 'tr-password2']);
             if (!res) return;
             if (res.status === 'success' && res.token) { clear(['tr-login-id', 'tr-display', 'tr-school', 'tr-purpose-text']); resetRegisterChoices(); afterAuth(res); return; }
+            if (res.code === 'REG_CLOSED') { say('tr-msg', '目前尚未開放教師帳號註冊。已有教師帳號的老師，請按「返回登入」登入。'); return; }   /* 旗標 FLAG_TEACHER_REGISTRATION=off 時後端回 REG_CLOSED；前端只改說明文字，不改旗標 */
             say('tr-msg', errText(res, '無法建立帳號'));
         },
         startVoluntaryPassword: function () {
@@ -157,12 +159,15 @@ const AdminTeachers = (function () {
     function cell(tr, text, cls) { const td = document.createElement('td'); td.textContent = text === undefined || text === null ? '' : String(text); if (cls) td.className = cls; tr.appendChild(td); return td; }
     function btn(text, fn, id) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn-view'; b.textContent = text; if (id) b.id = id; b.addEventListener('click', fn); return b; }
 
+    const COLS = ['帳號', '顯示名稱', '學校', '使用用途', '註冊時間', '註冊方式', '狀態', '最後登入', '班級（使用中／封存）', '操作'];
+    const pg = { page: 1, q: '', sort: 'created', order: 'desc' };
     function render(list) {
         const tb = $('atp-list'); if (!tb) return; tb.textContent = '';
         if (!list.length) { const tr = document.createElement('tr'); const td = cell(tr, '還沒有教師帳號。'); td.colSpan = 10; tb.appendChild(tr); return; }
+        const labelRow = function (tr) { Array.prototype.forEach.call(tr.children, function (c, i) { c.setAttribute('data-label', COLS[i] || ''); }); };
         list.forEach((t) => {
             const tr = document.createElement('tr');
-            cell(tr, t.login_id); cell(tr, t.display_name + (String(t.verified) === 'yes' ? '（管理員確認）' : '')); cell(tr, t.school_name);
+            cell(tr, t.login_id); cell(tr, t.display_name + ((t.verified === true || String(t.verified) === 'yes') ? '（管理員確認）' : '')); cell(tr, t.school_name);
             const PUR = { classroom: '課堂教學', tutoring: '課後輔導', other: '其他教學用途' };
             cell(tr, t.usage_purpose ? (PUR[t.usage_purpose] || '') + (t.usage_purpose === 'other' && t.usage_purpose_other ? '：' + t.usage_purpose_other : '') : '（管理員建立）');
             cell(tr, t.created_at ? String(t.created_at).replace('T', ' ').slice(0, 16) : '');
@@ -171,22 +176,39 @@ const AdminTeachers = (function () {
             cell(tr, active ? '使用中' : '已停用', active ? 'atp-st--active' : 'atp-st--disabled');
             cell(tr, t.last_login_at ? String(t.last_login_at).replace('T', ' ').slice(0, 16) : '尚未登入');
             cell(tr, (t.classes_active === undefined ? '—' : t.classes_active + ' ／ ' + t.classes_archived));
+            tr.dataset.teacher = t.teacher_id;
             const td = document.createElement('td'); const box = document.createElement('div'); box.className = 'atp-act';
             box.appendChild(btn('重設密碼', () => AdminTeachers.resetPw(t.teacher_id, t.login_id), 'atp-reset-' + t.teacher_id));
             box.appendChild(btn(active ? '停用' : '啟用', () => AdminTeachers.setStatus(t.teacher_id, active ? 'disabled' : 'active'), 'atp-toggle-' + t.teacher_id));
-            const isV = String(t.verified) === 'yes';
+            const isV = (t.verified === true || String(t.verified) === 'yes');
             box.appendChild(btn(isV ? '取消管理員確認' : '設為管理員確認', () => AdminTeachers.setVerified(t.teacher_id, isV ? 'no' : 'yes'), 'atp-verify-' + t.teacher_id));
             if (isV) box.appendChild(btn('核發紀錄', () => { if (typeof AdminStudents !== 'undefined') AdminStudents.listTeacherAudit(t.teacher_id, t.login_id); }, 'atp-audit-' + t.teacher_id));
-            td.appendChild(box); tr.appendChild(td); tb.appendChild(tr);
+            td.appendChild(box); tr.appendChild(td); labelRow(tr); tb.appendChild(tr);
         });
     }
 
     return {
-        enter: function () { const p = $('admin-teachers-panel'); if (p) p.hidden = false; if (typeof AdminStudents !== 'undefined') AdminStudents.enter(); return this.load(); },
-        leave: function () { const p = $('admin-teachers-panel'); if (p) p.hidden = true; if (typeof AdminStudents !== 'undefined') AdminStudents.leave(); this.hideTemp(); const tb = $('atp-list'); if (tb) tb.textContent = ''; say('atp-msg', ''); say('atp-precheck-out', ''); },
+        enter: function (onlyTeachers) { const p = $('admin-teachers-panel'); if (p) p.hidden = false; if (!onlyTeachers && typeof AdminStudents !== 'undefined') AdminStudents.enter(); pg.page = 1; pg.q = ''; const q = $('atp-q'); if (q) q.value = ''; return this.load(); },
+        leave: function () { const p = $('admin-teachers-panel'); if (p) p.hidden = true; if (typeof AdminStudents !== 'undefined') AdminStudents.leave(); this.hideTemp(); const tb = $('atp-list'); if (tb) tb.textContent = ''; say('atp-msg', ''); say('atp-precheck-out', ''); const pgr = $('atp-pager'); if (pgr) pgr.textContent = ''; },
+        search: function () { const q = $('atp-q'); pg.q = q ? q.value.trim() : ''; const s = $('atp-sort'); pg.sort = s ? s.value : 'created'; pg.page = 1; return this.load(); },
+        clearSearch: function () { const q = $('atp-q'); if (q) q.value = ''; pg.q = ''; pg.page = 1; return this.load(); },
+        goPage: function (n) { pg.page = Math.max(1, n); return this.load(); },
         load: async function () {
-            const r = await call({ action: 'admin_list_teachers' }); if (!r) return;
-            if (r.status === 'success') render(r.teachers || []); else say('atp-msg', r.message || '無法載入教師名單');
+            const tb = $('atp-list'); if (tb && !tb.children.length) { const tr = document.createElement('tr'); const td = cell(tr, '讀取中…'); td.colSpan = 10; tb.appendChild(tr); }
+            const r = await call({ action: 'admin_list_teachers_paged', page: pg.page, search: pg.q, sort: pg.sort, order: pg.order }); if (!r) return;
+            if (r.status !== 'success') { say('atp-msg', r.message || '無法載入教師名單'); if (tb) tb.textContent = ''; return; }
+            pg.page = r.page; render(r.teachers || []);
+            const host = $('atp-pager'); if (host) {
+                host.textContent = ''; host.className = 'ac-pager';
+                const info = document.createElement('p'); info.className = 'ac-pager__info'; info.id = 'atp-pager-info'; info.textContent = '第 ' + r.page + '／' + r.total_pages + ' 頁　共 ' + r.total + ' 位教師' + (r.search ? '（關鍵字：' + r.search + '）' : ''); host.appendChild(info);
+                const row = document.createElement('div'); row.className = 'ac-pager__row';
+                const mk = function (txt, n, dis, cur, id) { const b = btn(txt, () => AdminTeachers.goPage(n), id); b.classList.add('ac-pg'); if (cur) { b.classList.add('ac-pg--cur'); b.setAttribute('aria-current', 'page'); } b.disabled = !!dis; return b; };
+                row.appendChild(mk('上一頁', r.page - 1, r.page <= 1, false, 'atp-prev'));
+                const lo = Math.max(1, Math.min(r.page - 2, r.total_pages - 4)), hi = Math.min(r.total_pages, lo + 4);
+                for (let i = lo; i <= hi; i++) row.appendChild(mk(String(i), i, false, i === r.page, 'atp-page-' + i));
+                row.appendChild(mk('下一頁', r.page + 1, r.page >= r.total_pages, false, 'atp-next'));
+                host.appendChild(row);
+            }
         },
         create: async function () {
             const login = $('atp-login').value.trim(), display = $('atp-display').value.trim(), school = $('atp-school').value.trim();
@@ -209,9 +231,9 @@ const AdminTeachers = (function () {
             else say('atp-msg', r.message || '無法變更');
         },
         setVerified: async function (teacherId, verified) {
-            if (verified === 'no' && !window.confirm('取消後，這位教師已核發、尚未使用的啟用碼會同時作廢。要繼續嗎？')) return;
+            if (verified === 'no' && !window.confirm('取消後，這位教師就不能再重設學生密碼。要繼續嗎？')) return;
             const r = await call({ action: 'admin_set_teacher_verified', teacher_id: teacherId, verified: verified }); if (!r) return;
-            if (r.status === 'success') { say('atp-msg', verified === 'yes' ? '已設為管理員確認（這是選用的標示）。' : '已取消管理員確認' + (r.revoked_codes ? '，並作廢 ' + r.revoked_codes + ' 組啟用碼。' : '。')); await this.load(); }
+            if (r.status === 'success') { say('atp-msg', verified === 'yes' ? '已設為管理員確認（這是選用的標示）。' : '已取消管理員確認。'); await this.load(); }
             else say('atp-msg', r.message || '無法變更');
         },
         showTemp: function (who, pw, exp) {
@@ -233,3 +255,10 @@ const AdminTeachers = (function () {
         }
     };
 })();
+
+document.addEventListener('DOMContentLoaded', function () {
+    const f = document.getElementById('atp-searchbar'); if (!f) return;
+    f.addEventListener('submit', function (e) { e.preventDefault(); AdminTeachers.search(); });
+    const c = document.getElementById('atp-search-clear'); if (c) c.addEventListener('click', function () { AdminTeachers.clearSearch(); });
+    const s = document.getElementById('atp-sort'); if (s) s.addEventListener('change', function () { AdminTeachers.search(); });
+});

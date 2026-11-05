@@ -65,6 +65,7 @@ const StudentTasks = (function () {
             el('div', { id: 'stt-pending' }),
             el('p', { id: 'stt-summary', class: 'tp-hint', role: 'status' }),
             el('div', { id: 'stt-list' }),
+            el('div', { id: 'stt-quizzes' }),
             el('p', { id: 'stt-msg', class: 'ds-error en-error', role: 'alert' }),
             btn('重新整理', 'ds-btn--sea', function () { load(this); }, 'stt-refresh'),
             btn('回我的班級', 'ds-btn--ghost en-back', function () { if (typeof StudentClass !== 'undefined') StudentClass.openEntry(); }, 'stt-class'),
@@ -129,6 +130,7 @@ const StudentTasks = (function () {
         render();
         if (!ok) say('stt-msg', st.error);
         if (typeof TaskRun !== 'undefined') TaskRun.paintPending();
+        if (ok && typeof StudentQuiz !== 'undefined') StudentQuiz.loadInto($('stt-quizzes'));   /* 階段 10：老師測驗放在同一個畫面，不另設入口 */
         return ok;
     }
     async function openScreen() {

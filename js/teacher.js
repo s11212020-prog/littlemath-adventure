@@ -474,14 +474,16 @@
                 if (res.status === 'success' && res.token) {
                     AuthSession.admin = { token: res.token, expires_at: res.expires_at }; adminMode = 'token';
                     document.getElementById('admin-pwd').value = '';                   // 登入後不再把密碼留在輸入框
-                    const data = await adminFetchAll(); Loading.hide();
+                    Loading.hide();
+                    /* 階段 10：登入後進入「管理員中心」，不預先下載學習紀錄；舊儀表板要到「資料匯出中心」按下才載入 */
+                    if (typeof AdminCenter !== 'undefined') { AdminCenter.open(); return; }
+                    const data = await adminFetchAll();
                     if (data.status !== 'success') { AuthSession.admin = null; adminMode = 'none'; document.getElementById('admin-error-msg').innerText = "無法載入資料：" + data.message; return; }
                     globalUsers = data.users; globalLogs = data.logs; renderAdminDashboard();
-                    if (typeof AdminTeachers !== 'undefined') await AdminTeachers.enter();
                     return;
                 }
                 if (res.status === 'error' && (res.code === 'UNKNOWN_ACTION' || res.code === 'SCHEMA_NOT_READY')) {      // 舊版後端、或新版後端還沒建立階段 9 資料表（過渡期）：沿用 get_admin_data
-                    adminMode = 'legacy';
+                    adminMode = 'legacy'; { const bb = document.getElementById('btn-admin-center-back'); if (bb) bb.hidden = true; }
                     const old = await apiCall({ action: 'get_admin_data', password: pwd }); Loading.hide();
                     if (old.status === 'error') { document.getElementById('admin-error-msg').innerText = adminErrText(old); return; }
                     globalUsers = old.users || []; globalLogs = old.logs || []; renderAdminDashboard();
@@ -494,6 +496,25 @@
                 document.getElementById('admin-error-msg').innerText = "無法登入，請稍後再試。";
             } catch (err) { console.error(err); Loading.hide(); document.getElementById('admin-error-msg').innerHTML = `連線失敗，請檢查網址或網路！<br><br><button onclick="enableDemoMode()" class="btn-game btn-primary" style="margin-top:10px;">開啟畢展展示模式</button>`; }
             finally { Loading.hide(); }   /* 任何分支都會關閉救生圈 */
+        }
+
+        /* 階段 10：從「資料匯出中心 → 學習紀錄分析（進階）」才載入舊版儀表板（原本的全量讀取，後端權限限制不變） */
+        async function openLegacyDashboard() {
+            if (adminMode !== 'token' || !AuthSession.admin) { adminSessionExpired(); return; }
+            if (Loading.busy) return;
+            Loading.show();
+            try {
+                const data = await adminFetchAll();
+                if (data.code === 'SESSION_INVALID') { adminSessionExpired(); return; }
+                if (data.status !== 'success') {
+                    const m = document.getElementById('ac-legacy-msg'); const t = '無法載入學習紀錄分析：' + (data.message || '請稍後再試');
+                    if (m) m.textContent = t; else alert(t); return;
+                }
+                globalUsers = data.users; globalLogs = data.logs; renderAdminDashboard();
+                const bb = document.getElementById('btn-admin-center-back'); if (bb) bb.hidden = false;
+                switchScreen('screen-admin-dashboard');
+            } catch (e) { console.error(e); alert('連線失敗，請檢查網路後再試一次。'); }
+            finally { Loading.hide(); }
         }
 
         async function refreshAdminData() {
