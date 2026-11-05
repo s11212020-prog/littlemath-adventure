@@ -38,6 +38,8 @@
     <link rel="stylesheet" href="css/cabin-entry.css?v=2026.11.02-9F-3a">
     <link rel="stylesheet" href="css/map-compact.css?v=2026.11.02-9F-3a">
     <link rel="stylesheet" href="css/stage9f.css?v=2026.11.02-9F-3a">
+    <link rel="stylesheet" href="css/admin-center.css?v=2026.11.05-stage10">
+    <link rel="stylesheet" href="css/quiz.css?v=2026.11.05-stage10">
     <link rel="stylesheet" href="css/compat.css?v=2026.11.02-9F-3a">
 </head>
 <body>
@@ -538,6 +540,7 @@
                 <div class="ds-field"><label class="ds-label" for="tl-password">密碼</label><input type="password" id="tl-password" class="ds-input" placeholder="請輸入密碼" autocomplete="current-password" enterkeyhint="go" maxlength="70" onkeyup="if(event.key==='Enter') TeacherPortal.login();"></div>
                 <p id="tl-msg" class="ds-error en-error" role="alert"></p>
                 <div class="en-actions"><button type="button" class="ds-btn ds-btn--deep ds-btn--block" id="tl-submit" onclick="TeacherPortal.login()"><span data-icon="teacher" data-size="26"></span>登入</button></div>
+                <p class="tp-hint" id="tl-forgot">忘記密碼請聯絡管理員。</p>
                 <button type="button" class="ds-btn ds-btn--ghost ds-btn--block" id="tl-goto-register" onclick="TeacherPortal.open('screen-teacher-register')">註冊教師帳號</button>
                 <button type="button" class="ds-btn ds-btn--ghost ds-btn--block en-back" id="tl-back" onclick="logoutToRoleSelect()"><span data-icon="back" data-size="26"></span>返回身分選擇</button>
             </div>
@@ -615,6 +618,12 @@
                 <p class="tp-note" id="th-privacy">資料保護提醒：本系統目前只用於<strong>測試與展示</strong>。正式在班級使用、蒐集學生本名之前，請先向學校確認個資與家長同意規定；未確認前請只使用假資料。</p>
                 <div class="en-actions">
                     <button type="button" class="ds-btn ds-btn--sea ds-btn--block" id="th-classes" onclick="TeacherClass.open()"><span data-icon="crew" data-size="26"></span>我的班級</button>
+                    <div id="th-quiz" class="th-quiz" hidden>
+                        <button type="button" class="ds-btn ds-btn--deep ds-btn--block" id="th-quiz-new" onclick="TeacherQuiz.openNew()"><span data-icon="plus" data-size="26"></span>建立題目／測驗</button>
+                        <button type="button" class="ds-btn ds-btn--sea ds-btn--block" id="th-quiz-bank" onclick="TeacherQuiz.openBank()"><span data-icon="book" data-size="26"></span>我的題庫</button>
+                        <button type="button" class="ds-btn ds-btn--sea ds-btn--block" id="th-quiz-list" onclick="TeacherQuiz.open()"><span data-icon="story" data-size="26"></span>我出的任務或測驗</button>
+                        <button type="button" class="ds-btn ds-btn--sea ds-btn--block" id="th-quiz-results" onclick="TeacherQuiz.openResults()"><span data-icon="chart" data-size="26"></span>學生作答結果</button>
+                    </div>
                     <button type="button" class="ds-btn ds-btn--gold ds-btn--block" id="th-change-pw" onclick="TeacherPortal.startVoluntaryPassword()">更改密碼</button>
                     <button type="button" class="ds-btn ds-btn--ghost ds-btn--block" id="th-logout" onclick="logoutToRoleSelect()"><span data-icon="logout" data-size="26"></span>登出</button>
                 </div>
@@ -623,23 +632,26 @@
     </div>
 
     <!-- 教師端：儀表板（階段 8 視覺統一：深海藍／青綠／乳白；圖示一律用 ui-kit.js 的 SVG；所有 id、篩選、分析、匯出功能不變） -->
-    <div id="screen-admin-dashboard" class="screen td-screen" style="background:var(--bg-paper);">
-        <div class="admin-container td-container">
-            <header class="admin-header-area td-head">
+    <div id="screen-admin-center" class="screen td-screen ac-screen" style="background:var(--bg-paper);">
+        <div class="admin-container td-container ac-container">
+            <header class="admin-header-area td-head ac-head">
                 <div class="td-head__title">
                     <span class="td-head__icon" data-icon="teacher" data-size="52"></span>
                     <div>
-                        <div class="admin-brand"><span class="app-name"><span class="bn-main">小小算術家</span><span class="bn-colon">：</span><span class="bn-sub">六島大冒險</span></span>｜管理後台</div>
-                        <h1 id="dashboard-title" class="td-title"><span class="td-title__icon" data-icon="chart" data-size="34"></span><span id="dashboard-title-text">班級學習分析儀表板</span></h1>
-                        <p class="td-updated">最後更新時間：<time id="admin-updated">尚未載入</time></p>
+                        <div class="admin-brand"><span class="app-name"><span class="bn-main">小小算術家</span><span class="bn-colon">：</span><span class="bn-sub">六島大冒險</span></span>｜管理員中心</div>
+                        <h1 class="td-title">管理員中心</h1>
                     </div>
                 </div>
                 <div class="td-head__actions">
-                    <button type="button" class="ds-btn ds-btn--gold ds-btn--sm" onclick="refreshAdminData()" id="btn-admin-refresh"><span data-icon="refresh" data-size="24"></span>重新整理</button>
-                    <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" onclick="logoutToRoleSelect()" id="btn-admin-logout"><span data-icon="logout" data-size="24"></span>登出系統</button>
+                    <button type="button" class="ds-btn ds-btn--gold ds-btn--sm" id="ac-home-btn"><span data-icon="home" data-size="24"></span>回到管理員首頁</button>
+                    <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" id="ac-logout"><span data-icon="logout" data-size="24"></span>登出系統</button>
                 </div>
             </header>
-
+            <nav class="ac-navrow" aria-label="目前位置">
+                <button type="button" class="btn-view ac-backbtn" id="ac-back" hidden><span data-icon="back" data-size="22"></span>上一層</button>
+                <div class="ac-crumbs" id="ac-crumbs"></div>
+            </nav>
+            <main id="ac-main" class="ac-main" tabindex="-1"></main>
             <section class="td-card" id="admin-teachers-panel" hidden aria-labelledby="atp-h">
                 <h2 class="td-h td-h--sm" id="atp-h"><span data-icon="teacher" data-size="26"></span>教師帳號管理</h2>
                 <p class="tab-note">臨時密碼只會顯示<strong>一次</strong>，24 小時內有效，教師第一次登入必須更改。重新核發後，舊臨時密碼與該教師全部登入立即失效。</p>
@@ -651,10 +663,11 @@
                 </div>
                 <p id="atp-msg" class="tab-note" role="status" aria-live="polite"></p>
                 <div id="atp-temp" class="atp-temp" hidden role="alert"><strong>臨時密碼（只顯示這一次）</strong><div><span id="atp-temp-who"></span>：<code id="atp-temp-pw"></code></div><div class="tab-note" id="atp-temp-exp"></div><button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" id="atp-temp-close" onclick="AdminTeachers.hideTemp()">我已抄下，關閉</button></div>
-                <div class="td-scroll" role="region" aria-label="教師帳號表" tabindex="0"><table class="admin-table compact"><thead><tr><th>帳號</th><th>顯示名稱</th><th>學校</th><th>使用用途</th><th>註冊時間</th><th>註冊方式／聲明版本</th><th>狀態</th><th>最後登入</th><th>班級（使用中／封存）</th><th>操作</th></tr></thead><tbody id="atp-list"></tbody></table></div>
+                <form class="ac-bar atp-search" id="atp-searchbar" role="search"><label class="ac-bar__q"><span>搜尋教師</span><input type="search" id="atp-q" maxlength="40" autocomplete="off" placeholder="顯示名稱、帳號或學校"></label><label class="ac-bar__s"><span>排序</span><select id="atp-sort"><option value="created">建立時間</option><option value="last_login">最近登入</option><option value="name">顯示名稱</option><option value="classes">班級數</option></select></label><button type="submit" class="ds-btn ds-btn--deep ds-btn--sm" id="atp-search-go">搜尋</button><button type="button" class="btn-view td-clear" id="atp-search-clear">清除搜尋</button></form>
+                <div class="td-scroll atp-cards" role="region" aria-label="教師帳號表" tabindex="0"><table class="admin-table compact"><thead><tr><th>帳號</th><th>顯示名稱</th><th>學校</th><th>使用用途</th><th>註冊時間</th><th>註冊方式／聲明版本</th><th>狀態</th><th>最後登入</th><th>班級（使用中／封存）</th><th>操作</th></tr></thead><tbody id="atp-list"></tbody></table></div>
+                <div id="atp-pager"></div>
                 <div class="atp-precheck"><button type="button" class="btn-view" id="atp-precheck-btn" onclick="AdminTeachers.precheck()">檢查學生學號資料（只讀取，不修改）</button><p id="atp-precheck-out" class="tab-note" role="status" aria-live="polite"></p></div>
             </section>
-
             <section class="td-card" id="admin-students-panel" hidden aria-labelledby="ast-h">
                 <h2 class="td-h td-h--sm" id="ast-h"><span data-icon="crew" data-size="26"></span>學生帳號保護</h2>
                 <p class="tab-note">學生忘記密碼、也沒有密碼重設碼時，可以在這裡重設。學生會拿到臨時密碼，登入後必須自己更改。請只在「實際確認眼前的人就是這個帳號的本人」之後才重設。</p>
@@ -686,6 +699,30 @@
                 <p id="ast-msg" class="tab-note" role="status" aria-live="polite"></p>
                 <ul id="ast-list" class="ast-list"></ul>
             </section>
+        </div>
+    </div>
+
+    <div id="screen-admin-dashboard" class="screen td-screen" style="background:var(--bg-paper);">
+        <div class="admin-container td-container">
+            <header class="admin-header-area td-head">
+                <div class="td-head__title">
+                    <span class="td-head__icon" data-icon="teacher" data-size="52"></span>
+                    <div>
+                        <div class="admin-brand"><span class="app-name"><span class="bn-main">小小算術家</span><span class="bn-colon">：</span><span class="bn-sub">六島大冒險</span></span>｜管理後台</div>
+                        <h1 id="dashboard-title" class="td-title"><span class="td-title__icon" data-icon="chart" data-size="34"></span><span id="dashboard-title-text">班級學習分析儀表板</span></h1>
+                        <p class="td-updated">最後更新時間：<time id="admin-updated">尚未載入</time></p>
+                    </div>
+                </div>
+                <div class="td-head__actions">
+                    <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" onclick="AdminCenter.open()" id="btn-admin-center-back"><span data-icon="back" data-size="24"></span>返回管理員中心</button>
+                    <button type="button" class="ds-btn ds-btn--gold ds-btn--sm" onclick="refreshAdminData()" id="btn-admin-refresh"><span data-icon="refresh" data-size="24"></span>重新整理</button>
+                    <button type="button" class="ds-btn ds-btn--ghost ds-btn--sm" onclick="logoutToRoleSelect()" id="btn-admin-logout"><span data-icon="logout" data-size="24"></span>登出系統</button>
+                </div>
+            </header>
+
+            
+
+            
 
             <section class="td-card td-filters" aria-labelledby="td-filter-h">
                 <h2 class="td-h td-h--sm" id="td-filter-h"><span data-icon="filter" data-size="26"></span>篩選條件</h2>
@@ -794,7 +831,7 @@
     <script src="js/prop-art.js?v=2026.11.02-9F-3a"></script>
     <script src="js/scene-art.js?v=2026.11.02-9F-3a"></script>
     <script src="js/session.js?v=2026.11.02-9F-3a"></script>
-    <script src="js/app.js?v=2026.11.04-9F-3a-tourfix2.1"></script>
+    <script src="js/app.js?v=2026.11.05-stage10"></script>
     <script src="js/map.js?v=2026.11.02-9F-3a"></script>
     <script src="js/sea-art.js?v=2026.11.02-9F-3a"></script>
     <script src="js/sea-map.js?v=2026.11.02-9F-3a"></script>
@@ -812,13 +849,13 @@
     <script src="js/island-ui.js?v=2026.11.02-9F-3a"></script>
     <script src="js/title-route.js?v=2026.11.02-9F-3a"></script>
     <script src="js/tutorial.js?v=2026.11.04-9F-3a-tourfix2.2"></script>
-    <script src="js/teacher.js?v=2026.11.02-9F-3a"></script>
-    <script src="js/teacher-portal.js?v=2026.11.03-9F-3a-tourfix1"></script>
+    <script src="js/teacher.js?v=2026.11.05-stage10"></script>
+    <script src="js/teacher-portal.js?v=2026.11.05-stage10"></script>
     <script src="js/student-pin.js?v=2026.11.04-9F-3a-tourfix2.1"></script>
-    <script src="js/student-admin.js?v=2026.11.04-9F-3a-tourfix2.1"></script>
-    <script src="js/student-class.js?v=2026.11.03-9F-3a-tourfix1"></script>
+    <script src="js/student-admin.js?v=2026.11.05-stage10"></script>
+    <script src="js/student-class.js?v=2026.11.05-stage10"></script>
     <script src="js/teacher-class.js?v=2026.11.04-9F-3a-tourfix2.1"></script>
-    <script src="js/student-tasks.js?v=2026.11.02-9F-3a"></script>
+    <script src="js/student-tasks.js?v=2026.11.05-stage10"></script>
     <script src="js/teacher-tasks.js?v=2026.11.03-9F-3a-tourfix1"></script>
     <script src="js/rewards.js?v=2026.11.02-9F-3a"></script>
     <script src="js/reward-art.js?v=2026.11.02-9F-3a"></script>
@@ -826,6 +863,11 @@
     <script src="js/cabin-net.js?v=2026.11.02-9F-3a"></script>
     <script src="js/cabin.js?v=2026.11.02-9F-3a"></script>
     <script src="js/map-menu.js?v=2026.11.02-9F-3a"></script>
+    <script src="js/quiz-common.js?v=2026.11.05-stage10"></script>
+    <script src="js/csv-export.js?v=2026.11.05-stage10"></script>
+    <script src="js/teacher-quiz.js?v=2026.11.05-stage10"></script>
+    <script src="js/student-quiz.js?v=2026.11.05-stage10"></script>
+    <script src="js/admin-center.js?v=2026.11.05-stage10"></script>
 
 </body>
 </html>
