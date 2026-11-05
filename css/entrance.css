@@ -90,6 +90,14 @@
 .en-crewrow__one svg { height: clamp(96px, 15vh, 150px); width: auto; }
 @media (min-width: 600px) and (min-height: 700px) { .en-crewrow { display: flex; } }
 
+/* 首頁右上角「管理員登入」：小型膠囊、次要層級（不是第三張身分卡）。至少 44×44；避開瀏海與安全區；窄螢幕時把內容往下讓出一列，不遮標題與身分卡 */
+.en-admin-link { position: absolute; z-index: calc(var(--layer-map) + 1); top: calc(var(--safe-top) + 10px); right: calc(var(--safe-right) + 12px); display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; padding: 0 14px; border: 2px solid var(--line-soft); border-radius: var(--radius-pill); background: var(--white-solid); color: var(--ocean-deep); font: var(--fw-heavy) var(--fs-caption)/1 var(--font-sans); cursor: pointer; box-shadow: 0 2px 0 var(--line-soft); }
+.en-admin-link [data-icon] { display: inline-flex; width: 22px; height: 22px; flex: 0 0 auto; }
+.en-admin-link:hover { border-color: var(--ocean-deep); }
+.en-admin-link:focus-visible { outline: 3px solid var(--ocean-deep); outline-offset: 2px; }
+@media (max-width: 899px) { #screen-role-select .en-wrap { padding-top: calc(var(--safe-top) + 64px); } }
+@media (max-width: 899px) and (max-height: 520px) { #screen-role-select .en-wrap { padding-top: calc(var(--safe-top) + 56px); } }
+
 /* ---------- 4. 學生登入／教師登入卡片 ---------- */
 .en-wrap--card { max-width: 520px; }
 .en-card { width: 100%; text-align: center; padding: var(--space-6) var(--space-5); border-color: var(--ink); box-shadow: 0 7px 0 var(--wood-edge), var(--shadow-pop); }
